@@ -1,0 +1,77 @@
+{
+  "dslVersion": 0,
+  "id": "waystation-arrival",
+  "title": "The Waystation",
+  "location": {
+    "id": "waystation",
+    "name": "Roadside Waystation",
+    "description": "A low stone building at a crossroads, lit by a single lantern. Rain on the roof.",
+    "art": {
+      "kind": "background",
+      "subject": "stone waystation at a rainy crossroads, night, single lantern",
+      "mood": "quiet, expectant",
+      "sizeClass": "large"
+    }
+  },
+  "narration": "The rain has followed you for three days, and the waystation is the first roof you've seen. Inside, warmth. A keeper behind the counter watches you shake the water off — not unkindly, but carefully, the way people watch strangers who arrive after dark.",
+  "entities": [
+    {
+      "id": "keeper-ash",
+      "name": "Ash",
+      "description": "The waystation keeper. Grey-braided, steady hands, a ledger always open.",
+      "role": "character",
+      "art": {
+        "kind": "portrait",
+        "subject": "middle-aged waystation keeper with grey braids, lantern light",
+        "mood": "guarded warmth",
+        "sizeClass": "medium"
+      }
+    },
+    {
+      "id": "sealed-letter",
+      "name": "Sealed Letter",
+      "description": "A letter on the counter, addressed to no one, sealed in black wax.",
+      "role": "prop"
+    }
+  ],
+  "dialogue": [
+    {
+      "speakerId": "keeper-ash",
+      "text": "Room's a copper, meal's another. The letter — that's been waiting longer than you've been walking."
+    }
+  ],
+  "onEnterEffects": [{ "op": "setFlag", "key": "reached-waystation", "value": true }],
+  "choices": [
+    {
+      "id": "take-the-letter",
+      "label": "Take the sealed letter.",
+      "effects": [{ "op": "addItem", "item": "sealed-letter", "name": "Sealed Letter" }],
+      "transition": {
+        "type": "generate",
+        "hint": "The player claimed the mysterious letter without asking questions. Ash reacts; the letter's weight suggests something inside besides paper."
+      }
+    },
+    {
+      "id": "ask-about-letter",
+      "label": "Ask Ash who left the letter.",
+      "effects": [],
+      "transition": {
+        "type": "generate",
+        "hint": "The player is cautious and curious — probes for information before acting. Ash shares what little she knows; deepen the mystery without resolving it."
+      }
+    },
+    {
+      "id": "just-a-room",
+      "label": "Pay for a room and ignore the letter.",
+      "effects": [{ "op": "setFlag", "key": "ignored-the-letter", "value": true }],
+      "transition": {
+        "type": "generate",
+        "hint": "The player avoids the hook — respect that. A quiet night scene, but the world doesn't forget the letter; let consequence arrive on its own time."
+      }
+    }
+  ],
+  "freeText": {
+    "enabled": true,
+    "placeholder": "Or do something else…"
+  }
+}

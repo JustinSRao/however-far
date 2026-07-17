@@ -1,0 +1,18 @@
+{
+  "name": "unwritten",
+  "private": true,
+  "version": "0.0.0",
+  "description": "A game created in real time by AI as you play it",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm test --workspaces --if-present"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "typescript": "^5.6.0",
+    "vitest": "^3.0.0"
+  }
+}
