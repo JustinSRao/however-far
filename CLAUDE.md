@@ -59,9 +59,25 @@ encodes the project's invariants.
 
 ## Workflow
 
+- **Commit and push as you go.** Every completed, verified unit of work (a package, a
+  feature, a doc change) is committed immediately and pushed to `origin main` in the same
+  step. Never accumulate a large uncommitted working tree; never end a session with
+  unpushed commits. If a push is rejected, pull --rebase and push again before continuing.
 - `npm install` at root; `npm run typecheck` and `npm test` must pass before any commit.
 - When you make an architecture-shaping choice, append an ADR to `docs/DECISIONS.md` in
   the same change.
 - When you finish a roadmap item, check it off in `docs/ROADMAP.md` in the same change.
 - Keep this file current: if an instruction here goes stale, fix it in the same PR that
   made it stale.
+
+## Delegation (multi-agent development)
+
+The project owner has authorized free use of subagents. When delegating:
+
+- Delegate **isolated workstreams with stable contracts** (a package with a defined
+  interface, the web client against the schema package). Never delegate changes to
+  `packages/schema` or the invariants — those are lead-agent work.
+- Give the subagent: the relevant docs paths, the exact package boundary, the invariants
+  from this file, and the verification commands (`npm run typecheck`, `npm test`).
+- Subagents work in worktrees/branches; the lead agent reviews, merges to `main`, and
+  pushes. Broken code never lands on `main`.
