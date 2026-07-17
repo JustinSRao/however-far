@@ -61,6 +61,8 @@ export const SessionSave = z.object({
   canon: z.array(CanonFact).default([]),
   /** Set when this session is a replay of a published universe. */
   replayOfBundle: z.string().min(1).max(120).optional(),
+  /** Set once the final scene has been generated; picking its choice ends play. */
+  endingSceneId: Slug.optional(),
   endingSummary: z.string().max(2000).optional(),
 });
 export type SessionSave = z.infer<typeof SessionSave>;

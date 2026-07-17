@@ -229,3 +229,44 @@ export function getAnchorScenes(): ReadonlyMap<string, SceneSpec> {
 export function isAnchorScene(sceneId: string): boolean {
   return getAnchorScenes().has(sceneId);
 }
+
+/**
+ * Canon established by the Anchor itself — appended to the ledger at anchor
+ * exit so generated scenes can't contradict the opening. Hand-written and
+ * deterministic (no extraction pass over sacred content).
+ */
+export const ANCHOR_CANON: ReadonlyArray<{
+  statement: string;
+  entities: string[];
+}> = [
+  {
+    statement:
+      "The player woke at dawn on the Old Road with no memory of the previous night.",
+    entities: ["old-road"],
+  },
+  {
+    statement:
+      "Marlow is a traveler the player met at a roadside fire; Marlow knows the road and fears the eastern fires.",
+    entities: ["marlow", "old-road"],
+  },
+  {
+    statement:
+      "A narrow wooden box bearing the player's burned-in name opened only at the player's touch.",
+    entities: ["named-box"],
+  },
+  {
+    statement:
+      "Black smoke rises in the east; fires like it consume whole places and leave no bones.",
+    entities: ["eastern-smoke"],
+  },
+  {
+    statement:
+      "Marlow said the granary at Ferrow's Cross burned the same way as the eastern fires.",
+    entities: ["marlow", "ferrows-cross", "eastern-smoke"],
+  },
+  {
+    statement:
+      "A slow, deliberate bell is approaching along the road behind the player.",
+    entities: ["the-bell", "old-road"],
+  },
+];
