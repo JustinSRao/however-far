@@ -35,20 +35,35 @@ and regenerated, and the player only ever sees valid game states.
 
 ```
 packages/
-  schema/      Zod schemas for the Scene DSL — the contract between Director and engine
-apps/          (future) server (Director) and client (renderer)
+  schema/      Zod schemas — Scene DSL, profile, arc, canon, bundles (the contracts)
+  engine/      Deterministic pure reducer over validated scenes (zero AI deps)
+  content/     The Anchor — the only hand-authored scenes in the game
+  director/    The AI Director: Profiler, Architect, Scene Writer, Checker, Canon
+  library/     Persistence, universe bundle export/import, replay constraints
+apps/
+  play-cli/    Playable terminal client (new / resume / library / replay)
 docs/          Vision, architecture, roadmap, decision records
 .claude/       Skills and instructions for AI-assisted development
 ```
 
-## Status
+## Play it
 
-Early foundation. The Scene DSL schema package exists; the engine, Director, and client are
-next — see [docs/ROADMAP.md](docs/ROADMAP.md).
+```sh
+npm install
+export ANTHROPIC_API_KEY=sk-ant-…       # the Director authors with the Claude API
+cd apps/play-cli
+npm start                               # new playthrough
+npm start -- --sessions                 # list saves     · --resume <id> to continue
+npm start -- --library                  # published universes · --replay <path> to play one
+```
+
+Finish a game and you'll be offered to publish it to your local library, where it can be
+replayed — same world and story arc, freshly generated moment-to-moment.
 
 ## Development
 
 ```sh
 npm install
-npm run typecheck   # typecheck all workspace packages
+npm run typecheck   # all workspaces
+npm test            # all workspaces (no API key needed — the Director is tested via a fake model client)
 ```
