@@ -265,3 +265,27 @@ persistence env var `UNWRITTEN_HOME` → `HOWEVERFAR_HOME` (default `~/.however-
 existing local saves under `~/.unwritten` are orphaned — acceptable pre-release), GitHub
 repo renamed to `however-far`. Earlier ADRs keep their original wording (append-only
 history).
+
+## ADR-0017: Full names for every human character; dialogue honorifics codified
+
+**Status:** Accepted · 2026-07-22 · owner directive, extends ADR-0014/0016
+
+Every human character gets a **given name AND a family name**, both trait-derived per
+ADR-0014 (real Japanese surnames only). Exempt: pets/animals, spirits and creatures,
+and fantasy characters whose culture plausibly lacks surnames (epithets allowed).
+English prose and UI use given-name-first order ("Suzune Tōyama"); macrons in docs,
+ASCII in slugs.
+
+The protagonists' full names, by the same process:
+
+- **Itsuki Nemoto** (根本 樹) — Nemoto "root, origin" + Itsuki "tree": the rooted tree;
+  the boy who stays planted when reality rearranges.
+- **Suzune Tōyama** (遠山 鈴音) — Tōyama "distant mountain" + Suzune "bell-sound": a
+  bell heard from a distant mountain — her full name encodes the title *However Far*.
+
+Dialogue now follows the **`dialogue` skill**: Japanese honorifics kept in English text
+(anime-localization style) with correct usage (-san default, -kun/-chan intimacy
+registers, -senpai/-sensei roles, -sama/-dono in the fantasy court, yobisute for
+family/lovers/close friends), family-name-first social distance, and **address shifts
+treated as story beats recorded in canon**. The World Writer prompt carries a compressed
+version of these rules.

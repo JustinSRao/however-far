@@ -493,7 +493,7 @@ export const PATH_CHOICE_PORTALS: Readonly<Record<string, StoryPath>> = {
 export const PROLOGUE_CANON: ReadonlyArray<{ statement: string; entities: string[] }> = [
   {
     statement:
-      "Itsuki and Suzune are high-school seniors, next-door neighbors on Aozora Lane, childhood friends, and deeply in love.",
+      "Itsuki Nemoto (根本樹) and Suzune Toyama (遠山鈴音) are high-school seniors, next-door neighbors on Aozora Lane, childhood friends, and deeply in love; they address each other by bare given names.",
     entities: ["itsuki", "suzune", "aozora-lane"],
   },
   {

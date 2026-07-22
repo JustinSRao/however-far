@@ -16,7 +16,8 @@ encodes the project's invariants.
   reversing one requires a new superseding ADR, not a silent change.
 - `docs/ROADMAP.md` — current phase. Don't build ahead of the phase without being asked.
 - `.claude/skills/` — task-specific playbooks (DSL changes, Director prompts, canon,
-  pixel art). Use them when the task matches.
+  pixel art, asset studio, story bible, naming, dialogue/honorifics). Use them when the
+  task matches.
 
 ## Invariants (violating these is always a bug)
 
@@ -44,8 +45,10 @@ encodes the project's invariants.
    Developer Program, distribution domain — ADR-0013). No other paid services, infra,
    or assets — free and open-source everything else. If a task seems to need paid
    anything, stop and ask the owner.
-10. **Character names follow ADR-0014**: Japanese, personality-derived, via the
-    `name-creator` skill; the name→trait link is a canon fact.
+10. **Character names follow ADR-0014/0017**: Japanese, personality-derived, full
+    given + family name for humans (pets/spirits/creatures exempt), via the
+    `name-creator` skill; the name→trait link is a canon fact. Dialogue address and
+    honorifics follow the `dialogue` skill; address shifts are story beats.
 11. **Path B interface tricks are sandboxed (ADR-0015).** Diegetic "corruption" only
     ever touches the game's own UI/data directory, is never actually destructive, and
     is DSL-mediated — never improvised at the UI layer.

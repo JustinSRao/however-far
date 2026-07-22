@@ -19,16 +19,29 @@ the point), main cast, and one-scene NPCs alike.
    built from them. The connection may be direct (誠 makoto = sincerity for an honest
    character) or ironic/foreshadowing (a traitor named 忠 tadashi = loyalty) — ironic
    names must be intentional and payoff-planned, never accidental.
-3. **Given name required; family name** for real-world characters (his path) and for
-   fantasy nobility/royalty; optional elsewhere. Fantasy characters may carry an epithet
-   instead of a surname ("Rin of the Ashgrove").
-4. **Record the connection.** The name, its kanji, its reading, and the trait link
-   become a canon fact at the character's first appearance (e.g.
-   `Aoi (葵, "hollyhock" — turns toward the sun) — named for her stubborn optimism`).
-   This is what keeps the Continuity Checker able to catch a renamed or
-   personality-drifted character.
-5. **Check for collisions** against existing canon before committing — no two named
-   characters in one playthrough share a reading unless the story does it on purpose.
+3. **Full name required: given name AND family name** (owner directive, ADR-0017).
+   Every human character gets both, and the family name goes through the same
+   trait-derivation as the given name (it may carry a different facet: the given name
+   their nature, the family name their circumstance, home, or fate). Real Japanese
+   surnames only — 田中, 遠山, 根本 — not invented kanji mashes.
+   **Exemptions:** pets and animals (Maru), spirits/creatures/personified things, and
+   fantasy characters whose *culture* plausibly lacks surnames — those may take an
+   epithet instead ("Rin of the Ashgrove"). Fantasy nobility and royalty always get
+   full names or house names.
+4. **Name order & address (working conventions):** in English prose and UI we write
+   given-name-first ("Suzune Tōyama") — standard localization order; don't flip it.
+   Romanize with macrons in docs (Tōyama), plain ASCII in slugs/ids (toyama). How
+   characters *address* each other (family name vs given name, honorifics, dropped
+   honorifics) is relationship information — see the `dialogue` skill; getting it wrong
+   is a continuity bug.
+5. **Record the connection.** The full name, its kanji, its readings, and the trait
+   links become a canon fact at the character's first appearance (e.g.
+   `Aoi Hinata (日向葵, "hollyhock in the sun" — turns toward the light) — named for
+   her stubborn optimism`). This is what keeps the Continuity Checker able to catch a
+   renamed or personality-drifted character.
+6. **Check for collisions** against existing canon before committing — no two named
+   characters in one playthrough share a reading (given or family) unless the story
+   does it on purpose.
 
 ## Trait → kanji starting points (examples, not a lookup table)
 
@@ -53,7 +66,10 @@ speaker would accept as a name, not kanji mashed together.
   requirement intact.
 - **Villainess included:** her name should be beautiful and mean something chilling in
   hindsight.
-- **Protagonists:** Itsuki (樹, rooted and steadfast) and Suzune (鈴音, the bell that
-  called her) are final (ADR-0016) — never rename them.
+- **Protagonists (final, ADR-0016/0017 — never rename):**
+  **Itsuki Nemoto** (根本 樹 — Nemoto "root, origin" + Itsuki "tree": the rooted tree,
+  the boy who stays planted when reality rearranges) and **Suzune Tōyama** (遠山 鈴音 —
+  Tōyama "distant mountain" + Suzune "bell-sound": a bell heard from a distant
+  mountain — her full name encodes the game's title).
 - **Places/items** are exempt (name them in-world as fits the fiction), but named
   *personified* things — a sword with a soul, an AI, a spirit — count as characters.

@@ -5,13 +5,19 @@ project owner, and has the same protected status as the Anchor (CLAUDE.md invari
 **the Director may never contradict, rewrite, or "improve" anything in this file.**
 Everything the Director generates lives in the space *between* the fixed beats below.
 
-The protagonists' names are final (ADR-0016), chosen by the ADR-0014 process:
+The protagonists' names are final (ADR-0016/0017), chosen by the ADR-0014 process:
 
-- **ITSUKI** (樹, "tree") — the boy: rooted, steadfast; when reality reorganizes around
-  him, he stays planted and keeps what he was given.
-- **SUZUNE** (鈴音, "the sound of a bell") — the girl: bright, ringing, carries down the
-  whole street — and, in hindsight, named for the bell only she could hear. The
-  foreshadowing is intentional: her name is why the bell could call her.
+- **ITSUKI NEMOTO** (根本 樹) — the boy: Nemoto "root, origin" + Itsuki "tree" — the
+  rooted tree; when reality reorganizes around him, he stays planted and keeps what he
+  was given.
+- **SUZUNE TŌYAMA** (遠山 鈴音) — the girl: Tōyama "distant mountain" + Suzune
+  "bell-sound" — bright, ringing, carries down the whole street; in hindsight, named
+  for the bell only she could hear, ringing from however far. The foreshadowing is
+  intentional: her name is why the bell could call her, and her full name encodes the
+  game's title.
+
+They address each other by bare given names (childhood-friend intimacy — see the
+`dialogue` skill for the game's honorifics rules).
 
 ---
 
