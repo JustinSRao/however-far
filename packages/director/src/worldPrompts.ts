@@ -25,9 +25,9 @@ const AREA_GUIDE = `You author walkable top-down areas as JSON matching the prov
 - "description" is establishing prose shown to the player on entry: second person, present tense, concrete and sensory, 60-180 words. No headings, no meta-commentary, never mention genres, profiles, or that anything is generated.
 - "path" must equal the path you are told you are writing for.`;
 
-const HER_REGISTER = `You are writing Path A — Yuna's side: a classic anime-isekai fantasy ADVENTURE. Wonder, danger, found allies, growing power. It may get dark, but it is an adventure — momentum, discovery, courage. Yuna's fixed truths: she was summoned by the Villainess for the strongest dormant power ever detected; her one goal is to escape home to her family and to Kaito. She never settles in permanently. Do not resolve a working way home — that is a late-game beat gated by the arc.`;
+const HER_REGISTER = `You are writing Path A — Suzune's side: a classic anime-isekai fantasy ADVENTURE. Wonder, danger, found allies, growing power. It may get dark, but it is an adventure — momentum, discovery, courage. Suzune's fixed truths: she was summoned by the Villainess for the strongest dormant power ever detected; her one goal is to escape home to her family and to Itsuki. She never settles in permanently. Do not resolve a working way home — that is a late-game beat gated by the arc.`;
 
-const HIS_REGISTER = `You are writing Path B — Kaito's side: a grounded emotional and psychological DRAMA. The world forgot Yuna; only he remembers; the ache is the engine. It may have warmth, but it is a drama — quiet, precise, unsettling. Kaito's fixed truths: he does not know where she went and must not find out cheaply; corroboration of his memory never comes easy; his one goal is to find out what happened and save her. Do not reveal the other world — that is a late-game beat gated by the arc.`;
+const HIS_REGISTER = `You are writing Path B — Itsuki's side: a grounded emotional and psychological DRAMA. The world forgot Suzune; only he remembers; the ache is the engine. It may have warmth, but it is a drama — quiet, precise, unsettling. Itsuki's fixed truths: he does not know where she went and must not find out cheaply; corroboration of his memory never comes easy; his one goal is to find out what happened and save her. Do not reveal the other world — that is a late-game beat gated by the arc.`;
 
 export const WORLD_WRITER_SYSTEM = `You are the World Writer of a game authored in real time, invisibly, for one specific player — a top-down 2D RPG built on a fixed story: two high-school sweethearts, next-door neighbors; the girl vanished in the railway underpass; the player is living one side of what follows. You write the next area of their game as structured data.
 
@@ -130,13 +130,13 @@ export function buildAreaCheckerUser(
   ].join("\n\n");
 }
 
-export const WORLD_ARCHITECT_SYSTEM = `You are the Architect of a live-generated top-down RPG built on a fixed story: two high-school sweethearts, next-door neighbors; the girl (Yuna) vanished in the railway underpass; the player has chosen one side of what follows. Given the chosen path, the player's profile, and the established facts, design the complete arc of THEIR version of that side: premise, theme, 3 acts with concrete beats, setups that will demand payoffs, and the planned ending.
+export const WORLD_ARCHITECT_SYSTEM = `You are the Architect of a live-generated top-down RPG built on a fixed story: two high-school sweethearts, next-door neighbors; the girl (Suzune) vanished in the railway underpass; the player has chosen one side of what follows. Given the chosen path, the player's profile, and the established facts, design the complete arc of THEIR version of that side: premise, theme, 3 acts with concrete beats, setups that will demand payoffs, and the planned ending.
 
 Rules:
 - The fixed facts you are given are immutable rails, not suggestions. Everything you invent lives between them.
-- The planned ending is the path's THRESHOLD (this is fixed): on her path, Yuna reaches the way home but cannot cross alone; on his path, Kaito discovers the truth but cannot reach her alone. Design the specific, earned version of that threshold for this playthrough — never a full resolution, never a reunion.
-- Do not resolve the central mystery early: Kaito learning "she is in another world" and Yuna finding a working way home are late-game beats.
-- Beats are concrete events an author can write toward ("the Villainess's seneschal offers Yuna a bargain"), not themes.
+- The planned ending is the path's THRESHOLD (this is fixed): on her path, Suzune reaches the way home but cannot cross alone; on his path, Itsuki discovers the truth but cannot reach her alone. Design the specific, earned version of that threshold for this playthrough — never a full resolution, never a reunion.
+- Do not resolve the central mystery early: Itsuki learning "she is in another world" and Suzune finding a working way home are late-game beats.
+- Beats are concrete events an author can write toward ("the Villainess's seneschal offers Suzune a bargain"), not themes.
 - Act 1 beats should be reachable within a few areas. The whole path should complete in roughly 20-40 areas.
 - NAMES (hard rule): every character you name — the Villainess included — has a Japanese name whose kanji meaning connects to their personality (beautiful names that mean something chilling in hindsight suit antagonists). No Western fantasy names.
 - currentActId must be the first act's id.`;

@@ -6,16 +6,16 @@ import { AreaSpec, type StoryPath } from "@unwritten/schema";
  * never "improved" by AI output, identical for every player forever.
  *
  * Like the old text-era Anchor, it is also an instrument. What the player
- * lingers on, who they talk to, which choices they pick with Yuna, whether
+ * lingers on, who they talk to, which choices they pick with Suzune, whether
  * they examine the small things — all of it feeds the Profiler:
  *   street    — sociability, attention to detail, pace
  *   walk home — sentiment vs. humor vs. action (the promise conversation)
  *   underpass — protectiveness under pressure (the last choices with her)
  *   crossing  — the path choice itself (explicit, the one direct question)
  *
- * KAITO and YUNA are the owner's placeholder names (STORY.md). The cat is
- * named per ADR-0014: 丸 (maru, "round") — round of body, round of habit,
- * asleep in the same warm spot every morning.
+ * Names are final (ADR-0016): Itsuki (樹, rooted, steadfast) and Suzune
+ * (鈴音, the bell that called her). The cat is named per ADR-0014: 丸 (maru,
+ * "round") — round of body, round of habit, asleep in the same warm spot.
  */
 
 const street = AreaSpec.parse({
@@ -23,7 +23,7 @@ const street = AreaSpec.parse({
   id: "prologue-street",
   name: "Aozora Lane, Morning",
   description:
-    "Two houses share a hedge on a street so familiar you could walk it with your eyes closed. You have, actually — she led you, laughing, one summer when you were nine. Her gate is eight steps from yours. You counted, once. The morning smells of asphalt and someone's laundry, and Yuna is already waiting.",
+    "Two houses share a hedge on a street so familiar you could walk it with your eyes closed. You have, actually — she led you, laughing, one summer when you were nine. Her gate is eight steps from yours. You counted, once. The morning smells of asphalt and someone's laundry, and Suzune is already waiting.",
   path: "shared",
   width: 16,
   height: 9,
@@ -50,8 +50,8 @@ const street = AreaSpec.parse({
   playerSpawn: { x: 1, y: 3 },
   entities: [
     {
-      id: "yuna",
-      name: "Yuna",
+      id: "suzune",
+      name: "Suzune",
       description:
         "Waiting at her gate with her bag over one shoulder, hair ribbon catching the light, wearing the particular smile she saves for exactly this hour of the morning.",
       role: "character",
@@ -66,8 +66,8 @@ const street = AreaSpec.parse({
       interaction: {
         verb: "talk",
         lines: [
-          { speakerId: "yuna", text: "You're late. By eleven seconds. I counted." },
-          { speakerId: "yuna", text: "...What? Don't make that face. Come on, we'll miss the good crossing light." },
+          { speakerId: "suzune", text: "You're late. By eleven seconds. I counted." },
+          { speakerId: "suzune", text: "...What? Don't make that face. Come on, we'll miss the good crossing light." },
         ],
         choices: [
           {
@@ -107,7 +107,7 @@ const street = AreaSpec.parse({
         lines: [
           {
             speakerId: "narrator",
-            text: "Maru opens one eye, files you under 'not breakfast', and closes it again. Yuna feeds him in secret. You feed him in secret. Neither of you has told the other.",
+            text: "Maru opens one eye, files you under 'not breakfast', and closes it again. Suzune feeds him in secret. You feed him in secret. Neither of you has told the other.",
           },
         ],
         choices: [],
@@ -175,8 +175,8 @@ const walkHome = AreaSpec.parse({
   playerSpawn: { x: 1, y: 3 },
   entities: [
     {
-      id: "yuna",
-      name: "Yuna",
+      id: "suzune",
+      name: "Suzune",
       description:
         "Walking the railing-side like always, trailing one hand along the metal, dusk turning her silhouette gold at the edges.",
       role: "character",
@@ -185,7 +185,7 @@ const walkHome = AreaSpec.parse({
       interaction: {
         verb: "talk",
         lines: [
-          { speakerId: "yuna", text: "Hey. Weird question. If I got transferred somewhere really far away... like, REALLY far. What would you do?" },
+          { speakerId: "suzune", text: "Hey. Weird question. If I got transferred somewhere really far away... like, REALLY far. What would you do?" },
           { speakerId: "narrator", text: "She's watching the river, not you. The railing hums faintly under her hand." },
         ],
         choices: [
@@ -268,8 +268,8 @@ const underpass = AreaSpec.parse({
   playerSpawn: { x: 1, y: 2 },
   entities: [
     {
-      id: "yuna",
-      name: "Yuna",
+      id: "suzune",
+      name: "Suzune",
       description:
         "She has stopped walking. In the stuttering light she is there, and there, and there — a flipbook of herself, one frame missing.",
       role: "character",
@@ -278,9 +278,9 @@ const underpass = AreaSpec.parse({
       interaction: {
         verb: "talk",
         lines: [
-          { speakerId: "yuna", text: "...Do you hear that? A bell. Far off. Like— like being rung for." },
+          { speakerId: "suzune", text: "...Do you hear that? A bell. Far off. Like— like being rung for." },
           { speakerId: "narrator", text: "You hear the flicker. You hear the river. You do not hear a bell." },
-          { speakerId: "yuna", text: "It's pretty. That's the worst part. Hey— hey, it's fine. Why do you look like that? I'm right here." },
+          { speakerId: "suzune", text: "It's pretty. That's the worst part. Hey— hey, it's fine. Why do you look like that? I'm right here." },
         ],
         choices: [
           {
@@ -410,7 +410,7 @@ const vanishing = AreaSpec.parse({
       transition: { type: "area", areaId: "prologue-crossing" },
     },
   ],
-  onEnterEffects: [{ op: "setFlag", key: "yuna-vanished", value: true }],
+  onEnterEffects: [{ op: "setFlag", key: "suzune-vanished", value: true }],
 });
 
 const crossing = AreaSpec.parse({
@@ -446,7 +446,7 @@ const crossing = AreaSpec.parse({
       label: "the door of moonlight — live her story",
       transition: {
         type: "generate",
-        hint: "Begin Path A (Yuna). She wakes in the fantasy world in the first moments after the summoning. STORY.md Path A seeds apply: summoned by the Villainess for the strongest dormant power ever detected; her goal is to escape home. Open with disorientation, wonder, and danger in the Villainess's domain.",
+        hint: "Begin Path A (Suzune). She wakes in the fantasy world in the first moments after the summoning. STORY.md Path A seeds apply: summoned by the Villainess for the strongest dormant power ever detected; her goal is to escape home. Open with disorientation, wonder, and danger in the Villainess's domain.",
       },
     },
     {
@@ -455,7 +455,7 @@ const crossing = AreaSpec.parse({
       label: "the door of rain — live his story",
       transition: {
         type: "generate",
-        hint: "Begin Path B (Kaito). The next morning, his room, her ribbon in his pocket. STORY.md Path B seeds apply: the world has forgotten Yuna ever existed; only he remembers; he does not know where she went. Open quiet and wrong: a breakfast table with one chair too few next door.",
+        hint: "Begin Path B (Itsuki). The next morning, his room, her ribbon in his pocket. STORY.md Path B seeds apply: the world has forgotten Suzune ever existed; only he remembers; he does not know where she went. Open quiet and wrong: a breakfast table with one chair too few next door.",
       },
     },
   ],
@@ -493,22 +493,22 @@ export const PATH_CHOICE_PORTALS: Readonly<Record<string, StoryPath>> = {
 export const PROLOGUE_CANON: ReadonlyArray<{ statement: string; entities: string[] }> = [
   {
     statement:
-      "Kaito and Yuna are high-school seniors, next-door neighbors on Aozora Lane, childhood friends, and deeply in love.",
-    entities: ["kaito", "yuna", "aozora-lane"],
+      "Itsuki and Suzune are high-school seniors, next-door neighbors on Aozora Lane, childhood friends, and deeply in love.",
+    entities: ["itsuki", "suzune", "aozora-lane"],
   },
   {
     statement:
-      "On the evening walk home, inside the railway underpass, Yuna heard a distant bell that Kaito could not hear; moments later, between one flicker of the old fluorescent light and the next, she vanished.",
-    entities: ["kaito", "yuna", "railway-underpass"],
+      "On the evening walk home, inside the railway underpass, Suzune heard a distant bell that Itsuki could not hear; moments later, between one flicker of the old fluorescent light and the next, she vanished.",
+    entities: ["itsuki", "suzune", "railway-underpass"],
   },
   {
     statement:
-      "All that remained of Yuna in the underpass was her hair ribbon, still warm when Kaito picked it up.",
-    entities: ["kaito", "yuna", "her-ribbon", "railway-underpass"],
+      "All that remained of Suzune in the underpass was her hair ribbon, still warm when Itsuki picked it up.",
+    entities: ["itsuki", "suzune", "her-ribbon", "railway-underpass"],
   },
   {
     statement:
-      "Maru is the neighborhood cat of Aozora Lane; both Kaito and Yuna feed him in secret without telling the other.",
-    entities: ["maru", "kaito", "yuna", "aozora-lane"],
+      "Maru is the neighborhood cat of Aozora Lane; both Itsuki and Suzune feed him in secret without telling the other.",
+    entities: ["maru", "itsuki", "suzune", "aozora-lane"],
   },
 ];

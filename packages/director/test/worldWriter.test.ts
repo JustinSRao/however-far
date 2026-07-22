@@ -51,7 +51,7 @@ function makeCtx(overrides: Partial<WorldWriterContext> = {}): WorldWriterContex
     currentAreaId: "prologue-crossing",
     pos: { x: 1, y: 3 },
     facing: "left",
-    flags: { "yuna-vanished": true },
+    flags: { "suzune-vanished": true },
     inventory: [],
     visitedAreaIds: ["prologue-street", "prologue-crossing"],
     usedInteractions: [],
@@ -63,7 +63,7 @@ function makeCtx(overrides: Partial<WorldWriterContext> = {}): WorldWriterContex
     facts: [],
     state,
     recentAreas: [],
-    hint: "Begin Path A: Yuna wakes moments after the summoning.",
+    hint: "Begin Path A: Suzune wakes moments after the summoning.",
     existingAreaIds: ["prologue-street", "prologue-crossing"],
     ...overrides,
   };
@@ -71,8 +71,8 @@ function makeCtx(overrides: Partial<WorldWriterContext> = {}): WorldWriterContex
 
 const fact: CanonFact = {
   id: "fact-summoned",
-  statement: "Yuna was summoned by the Villainess for her dormant power.",
-  entities: ["yuna", "villainess"],
+  statement: "Suzune was summoned by the Villainess for her dormant power.",
+  entities: ["suzune", "villainess"],
   sceneId: "prologue-crossing",
 };
 

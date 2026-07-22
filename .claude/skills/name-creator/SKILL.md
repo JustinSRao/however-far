@@ -53,7 +53,7 @@ speaker would accept as a name, not kanji mashed together.
   requirement intact.
 - **Villainess included:** her name should be beautiful and mean something chilling in
   hindsight.
-- **Protagonists:** KAITO and YUNA are placeholders. When the owner picks final names,
-  use this process with them and record it as an ADR.
+- **Protagonists:** Itsuki (樹, rooted and steadfast) and Suzune (鈴音, the bell that
+  called her) are final (ADR-0016) — never rename them.
 - **Places/items** are exempt (name them in-world as fits the fiction), but named
   *personified* things — a sword with a soul, an AI, a spirit — count as characters.

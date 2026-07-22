@@ -13,12 +13,12 @@ Changes to STORY.md are made only by the project owner or at their explicit dire
 
 1. STORY.md seed facts load as **immutable, highest-priority canon** at session start.
    The Continuity Checker must reject any spec contradicting them.
-2. **Never resolve the central mystery early.** Kaito learning "she's in another world"
-   and Yuna finding a working way home are late-game beats — the Architect plans them,
+2. **Never resolve the central mystery early.** Itsuki learning "she's in another world"
+   and Suzune finding a working way home are late-game beats — the Architect plans them,
    the World Writer never leaks them.
 3. **Never kill, corrupt, or romantically reassign a protagonist.**
-4. **Tone stays in the path's register.** Path A (Yuna) is an adventure that may get
-   dark; Path B (Kaito) is a drama that may have warmth. Profiling tunes intensity
+4. **Tone stays in the path's register.** Path A (Suzune) is an adventure that may get
+   dark; Path B (Itsuki) is a drama that may have warmth. Profiling tunes intensity
    within the register, never across it.
 5. **No explicit cross-path crossovers before the Reunion.** Small asymmetric echoes
    (dreams, songs, a feeling of being watched over) are encouraged.
@@ -27,8 +27,8 @@ Changes to STORY.md are made only by the project owner or at their explicit dire
 
 ## Working conventions
 
-- Character names KAITO and YUNA are **placeholders**. Don't invent final names; if a
-  task seems to need them, ask the owner. A rename is find-and-replace + an ADR.
+- Character names Itsuki (樹) and Suzune (鈴音) are **final** (ADR-0016). Never rename
+  or re-spell them; their kanji meanings are canon.
 - When writing Director prompts, quote seed facts verbatim from STORY.md rather than
   paraphrasing — paraphrase drift is how contradictions creep in.
 - The shared Prologue is authored fixture content (like the old Anchor). Its beats are

@@ -244,3 +244,24 @@ about her vanishing, NPCs repeating conversations as if they never happened.
   vocabulary, Phase 6) emitted by the Director, validated, and rendered by the client —
   never model-driven improvisation at the UI layer.
 - Path A does not use these effects; the contrast is the point.
+
+## ADR-0016: The protagonists are Itsuki and Suzune; the game is "However Far"
+
+**Status:** Accepted · 2026-07-22 · owner-delegated naming
+
+The placeholder names KAITO and YUNA are retired. Per ADR-0014's process:
+
+- **Itsuki (樹, "tree")** — the boy. Rooted, steadfast; when reality reorganizes around
+  him, he stays planted and keeps what he was given. A tree remembers in rings.
+- **Suzune (鈴音, "the sound of a bell")** — the girl. Bright, ringing, carries down the
+  whole street — and, in hindsight, named for the bell only she could hear. The
+  foreshadowing is intentional and payoff-planned: her name is why the bell could call
+  her.
+
+The game itself is retitled from **Unwritten** to **However Far**, after the promise in
+the prologue ("I'd find you. However far.") — the line both paths are living and the
+multiplayer Reunion fulfills. Consequences: npm scope `@unwritten/*` → `@howeverfar/*`,
+persistence env var `UNWRITTEN_HOME` → `HOWEVERFAR_HOME` (default `~/.however-far`;
+existing local saves under `~/.unwritten` are orphaned — acceptable pre-release), GitHub
+repo renamed to `however-far`. Earlier ADRs keep their original wording (append-only
+history).

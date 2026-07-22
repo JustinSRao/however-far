@@ -50,7 +50,7 @@ async function main(): Promise<void> {
   await director.handleAction({ type: "interact", entityId: "maru" });
   await director.handleAction({
     type: "convoChoice",
-    entityId: "yuna",
+    entityId: "suzune",
     choiceId: "take-her-hand",
   });
 
@@ -58,7 +58,7 @@ async function main(): Promise<void> {
   director = at(director, "prologue-walk-home", 2, 2);
   await director.handleAction({
     type: "convoChoice",
-    entityId: "yuna",
+    entityId: "suzune",
     choiceId: "promise-find-her",
   });
 
@@ -66,7 +66,7 @@ async function main(): Promise<void> {
   director = at(director, "prologue-underpass", 3, 2);
   await director.handleAction({
     type: "convoChoice",
-    entityId: "yuna",
+    entityId: "suzune",
     choiceId: "grab-her-hand",
   });
 

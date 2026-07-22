@@ -80,18 +80,18 @@ describe("the Prologue", () => {
     ).toBe(true);
   });
 
-  it("Yuna appears before the vanishing and never after", () => {
-    const withYuna = ["prologue-street", "prologue-walk-home", "prologue-underpass"];
-    const withoutYuna = ["prologue-vanishing", "prologue-crossing"];
-    for (const id of withYuna) {
+  it("Suzune appears before the vanishing and never after", () => {
+    const withSuzune = ["prologue-street", "prologue-walk-home", "prologue-underpass"];
+    const withoutSuzune = ["prologue-vanishing", "prologue-crossing"];
+    for (const id of withSuzune) {
       expect(
-        getPrologueArea(id)!.entities.some((e) => e.id === "yuna"),
+        getPrologueArea(id)!.entities.some((e) => e.id === "suzune"),
         id,
       ).toBe(true);
     }
-    for (const id of withoutYuna) {
+    for (const id of withoutSuzune) {
       expect(
-        getPrologueArea(id)!.entities.some((e) => e.id === "yuna"),
+        getPrologueArea(id)!.entities.some((e) => e.id === "suzune"),
         id,
       ).toBe(false);
     }

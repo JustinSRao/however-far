@@ -116,7 +116,7 @@ describe("WorldDirector", () => {
     const director = new WorldDirector({ model });
     const result = await director.handleAction({
       type: "freeText",
-      text: "hug yuna before she can say anything",
+      text: "hug suzune before she can say anything",
     });
     expect(result.kind).toBe("ok");
     if (result.kind !== "ok") throw new Error("unreachable");
