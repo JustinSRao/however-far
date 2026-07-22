@@ -1,0 +1,131 @@
+import type {
+  AreaGameState,
+  AreaSpec,
+  CanonFact,
+  PlayerProfile,
+  StoryArc,
+  StoryPath,
+} from "@unwritten/schema";
+import { AUTHOR_PRINCIPLES } from "./prompts.js";
+
+/**
+ * World Writer prompts (Area DSL v1, ADR-0009/0010). Same cache discipline as
+ * prompts.ts: the system prompt is FROZEN — batch changes; user content
+ * orders stable blocks first, volatile tail last.
+ */
+
+const AREA_GUIDE = `You author walkable top-down areas as JSON matching the provided schema. Rules that matter beyond the schema:
+- The map: "ground" is row-major — ground[y][x] is an index into "tiles". It must have exactly "height" rows of exactly "width" columns, every index in range. Keep areas between 8 and 24 tiles per side.
+- Walkability is gameplay: build real spaces (streets, rooms, clearings) with unwalkable edges/obstacles shaping movement, not open featureless rectangles. playerSpawn must be on a walkable, unblocked tile.
+- Tile "color" and entity "color" are placeholder pixels until real art binds: choose muted, cohesive lowercase "#rrggbb" values that fit the area's mood. "artTag" names the kind of asset that will bind later ("town-roof", "castle-wall").
+- Entities: characters and props block movement; items do not. Position them where the fiction says. Every interactive entity gets ONE interaction (verb talk/examine/use/take): lines (speakerId must be "narrator" or an entity id present in THIS area), then optionally 2-4 choices with replies. Items use verb "take" with once:true and an addItem effect.
+- NAMES (hard rule): every newly introduced character has a Japanese name whose kanji meaning connects to their personality — set "nameMeaning" to the kanji, reading, and trait link (e.g. "雫 (shizuku, \\"droplet\\") — patient and quiet; heals drop by drop"). Ironic names must be intentional. Never name two characters with the same reading.
+- Portals (1-8): where leaving leads. Most carry {"type":"generate","hint":"..."} — the hint is your note to the NEXT author about where this leads and what it should pay off. Use {"type":"area","areaId":...} only for areas that already exist. {"type":"ending",...} only when instructed the final act allows it.
+- "effects" are the only way state changes. Set flags for anything a later area might care about.
+- "description" is establishing prose shown to the player on entry: second person, present tense, concrete and sensory, 60-180 words. No headings, no meta-commentary, never mention genres, profiles, or that anything is generated.
+- "path" must equal the path you are told you are writing for.`;
+
+const HER_REGISTER = `You are writing Path A — Yuna's side: a classic anime-isekai fantasy ADVENTURE. Wonder, danger, found allies, growing power. It may get dark, but it is an adventure — momentum, discovery, courage. Yuna's fixed truths: she was summoned by the Villainess for the strongest dormant power ever detected; her one goal is to escape home to her family and to Kaito. She never settles in permanently. Do not resolve a working way home — that is a late-game beat gated by the arc.`;
+
+const HIS_REGISTER = `You are writing Path B — Kaito's side: a grounded emotional and psychological DRAMA. The world forgot Yuna; only he remembers; the ache is the engine. It may have warmth, but it is a drama — quiet, precise, unsettling. Kaito's fixed truths: he does not know where she went and must not find out cheaply; corroboration of his memory never comes easy; his one goal is to find out what happened and save her. Do not reveal the other world — that is a late-game beat gated by the arc.`;
+
+export const WORLD_WRITER_SYSTEM = `You are the World Writer of a game authored in real time, invisibly, for one specific player — a top-down 2D RPG built on a fixed story: two high-school sweethearts, next-door neighbors; the girl vanished in the railway underpass; the player is living one side of what follows. You write the next area of their game as structured data.
+
+${AREA_GUIDE}
+
+${AUTHOR_PRINCIPLES}
+
+Output: an object {"area": <AreaSpec>, "advancesBeatId": <beat id or omit>}. Set advancesBeatId when this area's content completes one of the current act's beats.`;
+
+function factsBlock(facts: readonly CanonFact[]): string {
+  if (facts.length === 0) return "(no facts established yet)";
+  return facts.map((f) => `- [${f.id}] ${f.statement}`).join("\n");
+}
+
+function arcBlock(arc: StoryArc): string {
+  const acts = arc.acts
+    .map((a) => {
+      const marker = a.id === arc.currentActId ? " <-- CURRENT" : "";
+      const beats = a.beats
+        .map((b) => `    - [${b.id}] (${b.status}) ${b.summary}`)
+        .join("\n");
+      return `  Act "${a.title}" (${a.id})${marker}\n${beats}`;
+    })
+    .join("\n");
+  const setups = arc.setups
+    .filter((s) => s.status === "planted")
+    .map((s) => `  - [${s.id}] ${s.description}`)
+    .join("\n");
+  return [
+    `Premise: ${arc.premise}`,
+    `Theme: ${arc.theme}`,
+    `Acts:\n${acts}`,
+    `Open setups awaiting payoff:\n${setups || "  (none)"}`,
+    `Planned ending (${arc.plannedEnding.tone}): ${arc.plannedEnding.summary}`,
+  ].join("\n");
+}
+
+function profileBlock(p: PlayerProfile): string {
+  return [
+    `Tone: ${p.tone}`,
+    `Pacing: ${p.pacing} · Moral lean: ${p.moralLean} · Humor: ${p.humor}`,
+    `Appetites — combat ${p.appetites.combat}, dialogue ${p.appetites.dialogue}, exploration ${p.appetites.exploration}, puzzle ${p.appetites.puzzle}, romance ${p.appetites.romance}`,
+    p.notes.length ? `Notes: ${p.notes.join(" · ")}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+function areaStateSummary(state: AreaGameState): string {
+  const flags = Object.entries(state.flags)
+    .filter(([, v]) => v)
+    .map(([k]) => k);
+  return [
+    `Flags set: ${flags.length ? flags.join(", ") : "(none)"}`,
+    `Inventory: ${
+      state.inventory.length
+        ? state.inventory.map((i) => `${i.name} (${i.item})`).join(", ")
+        : "(empty)"
+    }`,
+    `Areas visited: ${state.visitedAreaIds.length}`,
+  ].join("\n");
+}
+
+export interface WorldWriterContext {
+  path: Exclude<StoryPath, "shared">;
+  profile: PlayerProfile;
+  arc: StoryArc;
+  facts: readonly CanonFact[];
+  state: AreaGameState;
+  /** Names/descriptions of the last couple of areas, for continuity of voice. */
+  recentAreas: readonly Pick<AreaSpec, "id" | "name" | "description">[];
+  hint: string;
+  existingAreaIds: readonly string[];
+}
+
+export function buildWorldWriterUser(ctx: WorldWriterContext): string {
+  const recent = ctx.recentAreas
+    .map((a) => `### ${a.name} (${a.id})\n${a.description}`)
+    .join("\n\n");
+  return [
+    `## Path register\n${ctx.path === "her" ? HER_REGISTER : HIS_REGISTER}`,
+    `## Player profile\n${profileBlock(ctx.profile)}`,
+    `## Story arc\n${arcBlock(ctx.arc)}`,
+    `## Established facts (do not contradict)\n${factsBlock(ctx.facts)}`,
+    `## Recent areas\n${recent || "(none)"}`,
+    `## Mechanical state\n${areaStateSummary(ctx.state)}`,
+    `## Already-used area ids (yours must be new)\n${ctx.existingAreaIds.join(", ")}`,
+    `## Authoring instruction for THIS area\n${ctx.hint}`,
+  ].join("\n\n");
+}
+
+export function buildAreaCheckerUser(
+  area: AreaSpec,
+  facts: readonly CanonFact[],
+): string {
+  return [
+    `## Established facts\n${factsBlock(facts)}`,
+    `## Candidate area\n${JSON.stringify(area)}`,
+    `Does the area contradict any fact?`,
+  ].join("\n\n");
+}

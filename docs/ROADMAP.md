@@ -44,23 +44,31 @@ before the previous phase's loop is proven.
 Goal: walk a character through a generated map in the Phaser client, on either path.
 
 - [x] STORY.md story bible; docs/ADRs updated for the pivot (this change)
-- [ ] **DSL v1 (`dslVersion` bump + migration):** map specs (tile layers from the asset
-      DB, collision, spawn points), placed entities (NPCs, items, portals, triggers),
-      interactions (talk/examine/use), movement-relevant state. Scene-era constructs
-      (dialogue, choices, effects, art requests) carry over inside the new specs
-- [ ] `packages/engine` v1: pure rules for the new specs — movement legality, collision,
-      trigger firing, interaction resolution, effect application. Fully unit-tested,
-      still zero AI/network dependencies
-- [ ] `apps/game`: Phaser 3 client (ADR-0010) — renders MapSpecs, player movement,
-      interaction prompts, dialogue UI, connected to `apps/server`
-- [ ] **Prologue v1:** the shared hand-authored opening (ordinary days → the last walk →
-      the disappearance → path choice) as fixtures in the new DSL, with profiling signals
-      wired (movement patterns, interaction choices, free text)
-- [ ] Director v1: Scene Writer becomes **World Writer** — emits maps + populated
-      entities + quests instead of prose scenes; Architect plans within STORY.md's rails
-      (path seeds as immutable canon, threshold endings); per-path style bibles
+- [x] **DSL v1:** `AreaSpec` family (`dslVersion: 1`) — tile-grid maps with collision,
+      placed entities (characters/props/items) with talk/examine/use/take interactions,
+      convo choices, portals with generate/area/ending transitions, `AreaGameState` +
+      `AreaAction`. Legacy v0 SceneSpec stays valid until the text-era apps retire (the
+      pivot's "migration": both spec families coexist during the transition)
+- [x] `packages/engine` v1: pure area rules — movement legality, collision (characters
+      block, items don't), reachability, interaction execution with once-semantics,
+      portals, `validateAreaIntegrity`. Fully unit-tested, zero AI/network dependencies
+- [x] `apps/game`: Phaser 3 client (ADR-0010) — renders AreaSpecs, grid movement,
+      interaction prompts, dialogue/choice UI, HUD, the "unwritten" veil at generate
+      portals. Local prologue playthrough works today; server connection pending
+- [x] **Prologue v1:** five hand-authored areas (Aozora Lane → the river road → the
+      underpass → the vanishing → the crossing with the two path doors), with profiling
+      probes designed into choices/interactions. *Streaming the probe signals into the
+      Profiler happens with the server wiring below*
+- [x] Director v1 core: **World Writer** — `writeArea` generation/validation/repair loop
+      (structured output → engine integrity → continuity check → feedback retries →
+      degrade), path registers (her adventure / his drama), ADR-0014 naming baked into
+      the prompt, STORY.md path seeds as loadable canon (`PATH_SEED_CANON`)
+- [ ] Server session flow v1: area-based sessions over `apps/server` (create/turn with
+      AreaActions, path choice at the crossing loads seeds, Profiler fed from prologue
+      play, Architect plans within the path rails, live `writeArea` behind the crossing
+      doors), and the game client switched from local-only to the server
 - [ ] Playable demo: prologue → choose a path → walk through the first generated area,
-      talk to the first generated NPC
+      talk to the first generated NPC (live API run)
 
 ## Phase 5 — Asset Studio + the asset database
 

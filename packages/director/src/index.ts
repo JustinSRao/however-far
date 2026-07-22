@@ -31,6 +31,19 @@ export { CanonLedger } from "./canonLedger.js";
 export { Director, type DirectorOptions, type TurnResult } from "./director.js";
 export { writeScene, WriterOutput, WriterFailedError } from "./writer.js";
 export {
+  checkAreaContinuity,
+  writeArea,
+  WorldWriterFailedError,
+  WorldWriterOutput,
+  type WriteAreaResult,
+} from "./worldWriter.js";
+export {
+  WORLD_WRITER_SYSTEM,
+  buildAreaCheckerUser,
+  buildWorldWriterUser,
+  type WorldWriterContext,
+} from "./worldPrompts.js";
+export {
   advanceArc,
   buildProfile,
   checkContinuity,
