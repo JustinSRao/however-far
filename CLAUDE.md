@@ -31,12 +31,18 @@ encodes the project's invariants.
    version and ship a migration. Published universe bundles must load forever.
 6. **API keys are server-side only.** The client never calls the Claude API.
 
-## Claude API usage (for Director code)
+## Model API usage (for Director code)
 
-- Default model `claude-opus-4-8`; Continuity Checker uses `claude-haiku-4-5`. Model IDs
-  live in one config module — never scatter string literals.
-- Adaptive thinking (`thinking: {type: "adaptive"}`), streaming on, structured outputs via
-  `output_config.format` fed from JSON Schema generated out of the Zod schemas.
+- **The provider is configuration, not architecture** (ADR-0008). Director code targets
+  the `ModelClient` interface and never imports a vendor SDK. OpenAI is the default;
+  Anthropic is still supported. Adding provider-specific behaviour means editing an
+  adapter, never Director logic, prompts, or `packages/schema`.
+- Model IDs live in one config module (`packages/director/src/config.ts`) — never scatter
+  string literals. Roles declare a provider-neutral `tier` ("strong" / "cheap"); each
+  adapter resolves that to its own model id.
+- Structured outputs are fed from JSON Schema generated out of the Zod schemas. OpenAI's
+  strict subset is handled in `openaiSchema.ts` — if you add an `.optional()` field or a
+  root-level union to a model-facing schema, its tests cover you; check they still pass.
 - Prompt-cache discipline: frozen system prompt + DSL docs first, canon/profile snapshots
   next (with `cache_control` breakpoints), volatile per-turn state last. No timestamps,
   UUIDs, or nondeterministic serialization in the prefix (`JSON.stringify` with sorted

@@ -53,8 +53,12 @@ docs/          Vision, architecture, roadmap, decision records
 
 ```sh
 npm install
-export ANTHROPIC_API_KEY=sk-ant-…       # the Director authors with the Claude API
+cp .env.example .env                    # then put your OPENAI_API_KEY in it
 ```
+
+`.env` is gitignored — the key never leaves your machine and is only ever read
+server-side. The Director works against either OpenAI (default) or Anthropic; see
+[ADR-0008](docs/DECISIONS.md).
 
 In the browser — two processes:
 
@@ -79,6 +83,9 @@ replayed — same world and story arc, freshly generated moment-to-moment.
 
 ```sh
 npm install
-npm run typecheck   # all workspaces
-npm test            # all workspaces (no API key needed — the Director is tested via a fake model client)
+npm run typecheck                    # all workspaces
+npm test                             # all workspaces — no API key needed, the Director
+                                     # is tested through a fake model client
+npm run models -w @unwritten/director  # list models your key can actually reach
+npm run eval -w @unwritten/play-cli    # live go/no-go demo (costs real tokens)
 ```

@@ -1,4 +1,4 @@
-import { Director, type ModelClient } from "@unwritten/director";
+import { Director, NO_KEY_MESSAGE, type ModelClient } from "@unwritten/director";
 import {
   loadSession,
   newReplaySession,
@@ -18,9 +18,7 @@ export class NotFoundError extends Error {
 /** Thrown when the Director is needed but no Claude API key is configured. */
 export class ModelUnavailableError extends Error {
   constructor() {
-    super(
-      "ANTHROPIC_API_KEY is not set on the server — the Director needs it to author your game.",
-    );
+    super(NO_KEY_MESSAGE);
     this.name = "ModelUnavailableError";
   }
 }

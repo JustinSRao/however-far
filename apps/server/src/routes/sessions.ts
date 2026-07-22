@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { PlayerAction } from "@unwritten/schema";
+import { NO_KEY_MESSAGE } from "@unwritten/director";
 import { BundleError, exportBundle, listSessions, writeBundle } from "@unwritten/library";
 import {
   ModelUnavailableError,
@@ -8,9 +9,7 @@ import {
   type SessionManager,
 } from "../sessionManager.js";
 
-const NO_KEY_MESSAGE =
-  "ANTHROPIC_API_KEY is not set on the server. Browsing works, but starting or " +
-  "continuing a game needs a key configured server-side.";
+const NO_KEY_RESPONSE = `${NO_KEY_MESSAGE} Browsing works without one; starting or continuing a game does not.`;
 
 const CreateSessionBody = z.discriminatedUnion("mode", [
   z.object({ mode: z.literal("new") }),
@@ -33,7 +32,7 @@ export function registerSessionRoutes(app: FastifyInstance, sessions: SessionMan
 
   app.post("/api/sessions", async (req, reply) => {
     if (!sessions.available) {
-      return reply.code(503).send({ error: NO_KEY_MESSAGE });
+      return reply.code(503).send({ error: NO_KEY_RESPONSE });
     }
     const parsed = CreateSessionBody.safeParse(req.body);
     if (!parsed.success) {

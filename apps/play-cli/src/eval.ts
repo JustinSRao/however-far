@@ -1,11 +1,17 @@
 import type { PlayerAction } from "@unwritten/schema";
-import { AnthropicModelClient, Director } from "@unwritten/director";
+import {
+  createModelClient,
+  Director,
+  NO_KEY_MESSAGE,
+  resolveProvider,
+  type ModelClient,
+} from "@unwritten/director";
 
 /**
  * The go/no-go demo (ROADMAP Phase 1): run contrasting scripted play styles
  * through the Anchor against the LIVE API and show that each becomes a
- * different game. Requires ANTHROPIC_API_KEY. Costs real tokens (~4 Opus
- * calls per style). Run: npm run eval
+ * different game. Needs a provider key (see .env.example). Costs real tokens —
+ * roughly 6 model calls per style. Run: npm run eval
  */
 
 interface Style {
@@ -43,10 +49,10 @@ const STYLES: Style[] = [
   },
 ];
 
-async function runStyle(style: Style): Promise<void> {
+async function runStyle(style: Style, model: ModelClient): Promise<void> {
   console.log(`\n${"═".repeat(72)}\n▶ ${style.name}\n${"═".repeat(72)}`);
   const director = new Director({
-    model: new AnthropicModelClient(),
+    model,
     log: (m) => console.log(`  [director] ${m}`),
   });
   for (const action of style.actions) {
@@ -70,16 +76,18 @@ async function runStyle(style: Style): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  if (!process.env["ANTHROPIC_API_KEY"]) {
-    console.error("ANTHROPIC_API_KEY required — this eval hits the live API.");
+  const model = createModelClient();
+  if (!model) {
+    console.error(`${NO_KEY_MESSAGE} This eval hits the live API.`);
     process.exitCode = 1;
     return;
   }
   console.log(
-    "Go/no-go eval: same Anchor, three play styles. Success = three visibly different games.",
+    `Go/no-go eval via ${resolveProvider()}: same Anchor, three play styles.\n` +
+      "Success = three visibly different games.",
   );
   for (const style of STYLES) {
-    await runStyle(style);
+    await runStyle(style, model);
   }
 }
 

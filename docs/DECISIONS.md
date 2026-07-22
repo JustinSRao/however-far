@@ -76,3 +76,31 @@ Sessions and universe bundles are JSON files under `UNWRITTEN_HOME` (default
 `~/.unwritten`), one file per object, validated on read. **Why:** zero infrastructure
 while the product is single-player-local; schemas already guarantee integrity; swapping in
 a database later is contained inside `packages/library`.
+
+## ADR-0008: The model provider is configuration, not architecture
+
+**Status:** Accepted · 2026-07-22 · amends ADR-0002
+
+The Director targets the `ModelClient` interface, never a vendor SDK. Two adapters
+implement it — `OpenAIModelClient` (default) and `AnthropicModelClient` — and
+`createModelClient()` picks one from the environment. Role→model mapping goes through a
+provider-neutral `tier` ("strong" / "cheap") so a swap never touches Director logic.
+
+**Why:** the project owner chose OpenAI, and the cost of honouring that was one adapter
+because the seam already existed for testability. Keeping both is close to free and avoids
+lock-in; the same seam is what would let a local model back replays later (a Phase 4 cost
+question).
+
+**Consequences.** Provider differences are absorbed in the adapter, not the prompts:
+
+- **Structured outputs.** OpenAI strict mode accepts a restricted JSON Schema subset, so
+  `openaiSchema.ts` translates: optional properties become nullable-and-required (nulls
+  stripped from the response), root-level unions get wrapped in an object, and unsupported
+  validation keywords are dropped. Those keywords are still enforced — every response is
+  re-validated against the original Zod schema, which the retry loop already required.
+  `packages/schema` stays the single source of truth and is unchanged.
+- **Prompt caching** is automatic and prefix-based rather than marked with
+  `cache_control`. The ordering discipline (frozen system prompt first, volatile per-turn
+  content last) is what earns the hit, and it is unchanged.
+- **Thinking budget** maps onto `reasoning_effort`; our two levels above "high" collapse
+  onto it.

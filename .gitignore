@@ -3,6 +3,8 @@ dist/
 *.tsbuildinfo
 .env
 .env.*
+# …but the key-less template belongs in the repo.
+!.env.example
 coverage/
 
 # agent worktrees

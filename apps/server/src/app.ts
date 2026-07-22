@@ -1,5 +1,5 @@
 import Fastify, { type FastifyInstance } from "fastify";
-import { AnthropicModelClient, type ModelClient } from "@unwritten/director";
+import { createModelClient, type ModelClient } from "@unwritten/director";
 import { SessionManager } from "./sessionManager.js";
 import { registerSessionRoutes } from "./routes/sessions.js";
 import { registerLibraryRoutes } from "./routes/library.js";
@@ -7,11 +7,11 @@ import { registerArtRoutes } from "./routes/art.js";
 
 export interface BuildServerOptions {
   /**
-   * Inject a fake model client for tests. When omitted, the real Claude
-   * client is constructed if ANTHROPIC_API_KEY is set in the environment;
-   * otherwise the server still boots but session creation is disabled (503).
+   * Inject a fake model client for tests. When omitted, a real client is
+   * built from whichever provider key the environment supplies; with no key
+   * the server still boots but session creation is disabled (503).
    */
-  model?: ModelClient;
+  model?: ModelClient | undefined;
   logger?: boolean;
 }
 
@@ -19,8 +19,7 @@ export interface BuildServerOptions {
 export function buildServer(opts: BuildServerOptions = {}): FastifyInstance {
   const app = Fastify({ logger: opts.logger ?? false });
 
-  const model: ModelClient | undefined =
-    opts.model ?? (process.env["ANTHROPIC_API_KEY"] ? new AnthropicModelClient() : undefined);
+  const model: ModelClient | undefined = opts.model ?? createModelClient();
 
   const sessions = new SessionManager({
     model,

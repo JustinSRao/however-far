@@ -2,8 +2,9 @@ import { createInterface } from "node:readline/promises";
 import { stdin, stdout } from "node:process";
 import type { SceneSpec, SessionSave } from "@unwritten/schema";
 import {
-  AnthropicModelClient,
+  createModelClient,
   Director,
+  NO_KEY_MESSAGE,
   type TurnResult,
 } from "@unwritten/director";
 import {
@@ -94,11 +95,9 @@ async function main(): Promise<void> {
     return;
   }
 
-  if (!process.env["ANTHROPIC_API_KEY"]) {
-    console.error(
-      "ANTHROPIC_API_KEY is not set. The Director needs it to author your game.\n" +
-        "Set it and try again (the key is used server-side only).",
-    );
+  const model = createModelClient();
+  if (!model) {
+    console.error(NO_KEY_MESSAGE);
     process.exitCode = 1;
     return;
   }
@@ -114,7 +113,7 @@ async function main(): Promise<void> {
   }
 
   const director = new Director(
-    { model: new AnthropicModelClient(), log: (m) => console.log(dim(`  [director] ${m}`)) },
+    { model, log: (m) => console.log(dim(`  [director] ${m}`)) },
     session,
   );
 

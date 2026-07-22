@@ -7,13 +7,20 @@
   "types": "./src/index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "models": "tsx scripts/models.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.112.3",
     "@unwritten/content": "*",
     "@unwritten/engine": "*",
     "@unwritten/schema": "*",
-    "zod": "^3.24.0"
+    "dotenv": "^17.4.2",
+    "openai": "^6.48.0",
+    "zod": "^3.24.0",
+    "zod-to-json-schema": "^3.25.2"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.1"
   }
 }

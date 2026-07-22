@@ -1,3 +1,4 @@
+import { NO_KEY_MESSAGE, resolveProvider } from "@unwritten/director";
 import { buildServer } from "./app.js";
 
 const PORT = Number(process.env["PORT"] ?? 3001);
@@ -5,10 +6,12 @@ const PORT = Number(process.env["PORT"] ?? 3001);
 async function main(): Promise<void> {
   const app = buildServer({ logger: true });
 
-  if (!process.env["ANTHROPIC_API_KEY"]) {
+  const provider = resolveProvider();
+  if (provider) {
+    app.log.info(`Director provider: ${provider}`);
+  } else {
     app.log.warn(
-      "ANTHROPIC_API_KEY is not set — the server will boot, but POST /api/sessions " +
-        "will return 503 until a key is configured.",
+      `${NO_KEY_MESSAGE} The server will boot, but POST /api/sessions returns 503 until then.`,
     );
   }
 

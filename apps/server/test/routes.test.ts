@@ -122,18 +122,21 @@ describe("GET /api/sessions/:id/art", () => {
 });
 
 describe("POST /api/sessions — no API key configured", () => {
-  const savedKey = process.env["ANTHROPIC_API_KEY"];
+  const KEYS = ["ANTHROPIC_API_KEY", "OPENAI_API_KEY", "UNWRITTEN_PROVIDER"] as const;
+  const saved = new Map(KEYS.map((k) => [k, process.env[k]]));
 
   beforeEach(() => {
-    delete process.env["ANTHROPIC_API_KEY"];
+    // Every provider key must be absent, or a developer's own key would make
+    // this test build a real client and hit the network.
+    for (const k of KEYS) delete process.env[k];
   });
   afterAll(() => {
-    if (savedKey !== undefined) process.env["ANTHROPIC_API_KEY"] = savedKey;
+    for (const [k, v] of saved) if (v !== undefined) process.env[k] = v;
   });
 
   it("boots fine but returns 503 with a friendly message", async () => {
-    // No `model` option passed, and ANTHROPIC_API_KEY unset — app.ts must
-    // fall back to "no model" rather than throwing at construction time.
+    // No `model` option passed and no provider key set — app.ts must fall
+    // back to "no model" rather than throwing at construction time.
     const app = buildServer({});
     const res = await app.inject({
       method: "POST",
@@ -142,7 +145,7 @@ describe("POST /api/sessions — no API key configured", () => {
     });
     expect(res.statusCode).toBe(503);
     const body = res.json() as { error: string };
-    expect(body.error).toMatch(/ANTHROPIC_API_KEY/);
+    expect(body.error).toMatch(/API key/i);
     await app.close();
   });
 });
