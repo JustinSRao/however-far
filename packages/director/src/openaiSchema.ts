@@ -30,6 +30,10 @@ export const ROOT_WRAPPER_KEY = "result";
 /**
  * JSON Schema keywords strict mode does not accept. Dropped from the schema
  * sent to the model; the Zod schema still enforces them on the way back.
+ *
+ * Dropping them silently would leave the model guessing — it once wrote 14
+ * beats into an act capped at 8 — so anything expressible in words is folded
+ * into the node's `description` by `constraintSentence` before removal.
  */
 const UNSUPPORTED_KEYWORDS = [
   "minLength",
@@ -47,6 +51,44 @@ const UNSUPPORTED_KEYWORDS = [
   "default",
 ] as const;
 
+/** Restate dropped constraints in prose the model will actually read. */
+function constraintSentence(node: JsonObject): string {
+  const parts: string[] = [];
+  const num = (k: string): number | undefined =>
+    typeof node[k] === "number" ? (node[k] as number) : undefined;
+
+  const [minItems, maxItems] = [num("minItems"), num("maxItems")];
+  if (minItems !== undefined && maxItems !== undefined) {
+    parts.push(`${minItems} to ${maxItems} items`);
+  } else if (minItems !== undefined) {
+    parts.push(`at least ${minItems} items`);
+  } else if (maxItems !== undefined) {
+    parts.push(`at most ${maxItems} items`);
+  }
+
+  const [minLength, maxLength] = [num("minLength"), num("maxLength")];
+  if (maxLength !== undefined) {
+    parts.push(`at most ${maxLength} characters`);
+  }
+  if (minLength !== undefined && minLength > 0 && maxLength === undefined) {
+    parts.push(`at least ${minLength} characters`);
+  }
+
+  const [minimum, maximum] = [num("minimum"), num("maximum")];
+  if (minimum !== undefined && maximum !== undefined) {
+    parts.push(`between ${minimum} and ${maximum}`);
+  } else if (minimum !== undefined) {
+    parts.push(`at least ${minimum}`);
+  } else if (maximum !== undefined) {
+    parts.push(`at most ${maximum}`);
+  }
+
+  if (typeof node["pattern"] === "string") {
+    parts.push(`matching ${node["pattern"] as string}`);
+  }
+  return parts.join(", ");
+}
+
 type JsonObject = Record<string, unknown>;
 
 function isPlainObject(v: unknown): v is JsonObject {
@@ -62,7 +104,14 @@ function toStrict(node: unknown): unknown {
   if (!isPlainObject(node)) return node;
 
   const out: JsonObject = { ...node };
+
+  // Preserve the constraints as guidance before dropping the keywords.
+  const constraints = constraintSentence(out);
   for (const keyword of UNSUPPORTED_KEYWORDS) delete out[keyword];
+  if (constraints) {
+    const existing = typeof out["description"] === "string" ? out["description"] : "";
+    out["description"] = existing ? `${existing} (${constraints})` : constraints;
+  }
 
   // Strict mode accepts anyOf but not oneOf/allOf.
   if (Array.isArray(out["oneOf"])) {

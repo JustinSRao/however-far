@@ -3,6 +3,7 @@ import { dirname, join, resolve } from "node:path";
 import dotenv from "dotenv";
 import { AnthropicModelClient, type ModelClient } from "./modelClient.js";
 import { OpenAIModelClient } from "./openaiClient.js";
+import { ValidatingModelClient } from "./validatingClient.js";
 
 export type Provider = "openai" | "anthropic";
 
@@ -55,15 +56,22 @@ export function resolveProvider(): Provider | undefined {
  * when no key is configured — callers degrade to "browsing works, play needs a
  * key" rather than crashing at startup.
  */
-export function createModelClient(): ModelClient | undefined {
+export function createModelClient(
+  opts: { log?: (msg: string) => void } = {},
+): ModelClient | undefined {
   const provider = resolveProvider();
   if (!provider) return undefined;
+
+  let inner: ModelClient;
   if (provider === "openai") {
     if (!process.env["OPENAI_API_KEY"]) return undefined;
-    return new OpenAIModelClient();
+    inner = new OpenAIModelClient();
+  } else {
+    if (!process.env["ANTHROPIC_API_KEY"]) return undefined;
+    inner = new AnthropicModelClient();
   }
-  if (!process.env["ANTHROPIC_API_KEY"]) return undefined;
-  return new AnthropicModelClient();
+  // Every call site gets bounded retry-with-feedback, not just the Writer.
+  return new ValidatingModelClient(inner, opts);
 }
 
 /** Human-readable reason there is no model client, for error messages. */

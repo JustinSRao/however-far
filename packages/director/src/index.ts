@@ -12,6 +12,7 @@ export {
   type StructuredRequest,
 } from "./modelClient.js";
 export { OpenAIModelClient } from "./openaiClient.js";
+export { ValidatingModelClient } from "./validatingClient.js";
 export {
   createModelClient,
   loadEnv,

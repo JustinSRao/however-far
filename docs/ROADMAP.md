@@ -21,8 +21,15 @@ The whole vision, minus graphics, in a terminal/basic web UI.
       structured outputs + Zod validation + regeneration on failure
 - [x] Canon Ledger v0: fact extraction per accepted scene, entity-first retrieval
 - [x] `apps/play-cli`: playable terminal loop (new/resume/library/replay)
-- [ ] Play a 20–30 minute session that visibly *becomes a different genre* depending on
-      how the Anchor is played — **the go/no-go demo (needs live API playtesting)**
+- [x] Play a session that visibly *becomes a different genre* depending on how the Anchor
+      is played — **the go/no-go demo: PASSED 2026-07-22** against the live API
+      (`npm run eval -w @unwritten/play-cli`). Three scripted play styles through the
+      identical Anchor produced a gritty survival thriller, a gothic detective mystery,
+      and an intimate amnesiac drama — each recontextualizing the same seeded facts
+      (Marlow, the box, the bell, the eastern smoke) and building its arc around the item
+      that player happened to take. The premise holds.
+- [ ] A full 20–30 minute human playthrough end to end (the eval only covers anchor exit
+      plus the first generated scene)
 
 ## Phase 2 — Whole-game coherence
 
