@@ -9,14 +9,19 @@ Goal: independently generated images that read as one game. The trick is that *p
 post-processing is a normalizer* — grid + palette quantization hides most cross-generation
 inconsistency, which is why this style was chosen (ADR-0005).
 
+Since the pivot (ADR-0011), art comes from three sources — CC0 imports, model-emitted
+sprite data, and gpt-image-2 — all gated through the Asset Studio (see the `asset-studio`
+skill for operating it). This skill covers the pipeline code itself.
+
 ## Pipeline invariants
 
 - The Director emits **art requests** (structured: kind, subject, mood, sizeClass,
   paletteRef), never images and never raw image-model prompts. Prompt construction from a
   request is deterministic server code.
-- Every universe has one **style bible** (palette ≤ 32 colors, grid size, outline rule,
-  perspective, era/mood keywords), authored by the Director once at genre-reveal and then
-  locked. All art prompts derive from it.
+- There are two **style bibles** (palette ≤ 32 colors, grid size, outline rule,
+  perspective, era/mood keywords) — one per story path (her fantasy world / his real
+  world) — authored at development time and locked (ADR-0011). All art prompts derive
+  from the target path's bible.
 - Post-processing is mandatory and deterministic: downscale to grid → quantize to the
   universe palette → optional outline. Raw model output never reaches the client.
 - Cache key = `hash(canonicalized request + style bible + pipeline version)`. Same
