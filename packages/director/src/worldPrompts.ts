@@ -138,6 +138,7 @@ Rules:
 - Do not resolve the central mystery early: Kaito learning "she is in another world" and Yuna finding a working way home are late-game beats.
 - Beats are concrete events an author can write toward ("the Villainess's seneschal offers Yuna a bargain"), not themes.
 - Act 1 beats should be reachable within a few areas. The whole path should complete in roughly 20-40 areas.
+- NAMES (hard rule): every character you name — the Villainess included — has a Japanese name whose kanji meaning connects to their personality (beautiful names that mean something chilling in hindsight suit antagonists). No Western fantasy names.
 - currentActId must be the first act's id.`;
 
 export function buildWorldArchitectUser(

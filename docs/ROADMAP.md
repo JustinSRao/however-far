@@ -63,12 +63,22 @@ Goal: walk a character through a generated map in the Phaser client, on either p
       (structured output → engine integrity → continuity check → feedback retries →
       degrade), path registers (her adventure / his drama), ADR-0014 naming baked into
       the prompt, STORY.md path seeds as loadable canon (`PATH_SEED_CANON`)
-- [ ] Server session flow v1: area-based sessions over `apps/server` (create/turn with
-      AreaActions, path choice at the crossing loads seeds, Profiler fed from prologue
-      play, Architect plans within the path rails, live `writeArea` behind the crossing
-      doors), and the game client switched from local-only to the server
-- [ ] Playable demo: prologue → choose a path → walk through the first generated area,
-      talk to the first generated NPC (live API run)
+- [x] Server session flow v1: area-based sessions over `apps/server`
+      (`/api/world-sessions` create/resume/list/action, WorldDirector behind them,
+      disk persistence), and the game client opens a server session on boot with
+      graceful local fallback
+- [x] Playable demo — **the Phase 4 go/no-go: PASSED 2026-07-22** against the live API
+      (`npm run eval:world -w @unwritten/director`). A scripted affectionate prologue
+      (took her hand, promised to find her, held on in the underpass) profiled as
+      "romantic portal fantasy — earnest, intimate"; the Architect planned her path
+      inside the rails (vowthread magic — binding bonds into force; the threshold
+      ending needs the ribbon left in his world; a Maru-echo companion from a whisker
+      on her sleeve) and the World Writer opened on a 16x14 "Ruined Moon Shrine" —
+      integrity clean, named characters carrying kanji nameMeanings. Crossing latency
+      ~3min with strong models — the Phase 6 speculative-generation item is the answer
+- [ ] Post-demo polish: free-text input UI in the game client (signals flow now;
+      generation response to free text arrives with streaming, Phase 6), and an
+      in-client path for resuming a saved session
 
 ## Phase 5 — Asset Studio + the asset database
 
