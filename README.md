@@ -1,19 +1,20 @@
-# Unwritten — The Game That Doesn't Exist
+# Unwritten
 
-A game that is **created in real time, by AI, as you play it**.
+A **top-down 2D pixel-art RPG created in real time, by AI, as you play it** — built on a
+fixed, hand-authored story.
 
-There is no pre-written story, no fixed genre, no content database. Every playthrough begins
-with the same small hand-crafted opening (the **Anchor**), and everything after that is
-generated live by an AI Director in response to what the player does, says, and chooses —
-while staying coherent as one complete game with a beginning, middle, and end.
+Two high-school sweethearts, next-door neighbors, meant for each other. One day, on the
+walk home, the girl disappears. The player chooses a path: play as **her** — summoned to
+a fantasy world for her dormant power, fighting to escape home — or as **him** — the only
+person on Earth who remembers she ever existed. The story's skeleton
+([docs/STORY.md](docs/STORY.md)) is fixed forever; *everything between its beats* — the
+maps, characters, quests, encounters, dialogue, and art — is authored live by an AI
+Director in response to how you play. The true ending is a cross-platform multiplayer
+reunion between one player from each path.
 
-When a player finishes their game, their universe can be **exported to a public library**,
-where anyone can play it for free: the overarching world and story arc stay fixed, but the
-moment-to-moment events, dialogue, and character interactions are regenerated live for each
-new player.
-
-> **Trying it out?** [PLAYTEST.md](PLAYTEST.md) is a step-by-step guide: how to run it,
-> what should happen, and what to look for.
+> **Status:** mid-pivot (ADR-0009). The text-era prototype below is playable today; the
+> Phaser RPG client, story skeleton integration, and Asset Studio are the current work
+> (ROADMAP Phases 4–5). [PLAYTEST.md](PLAYTEST.md) covers the text-era prototype.
 
 ## The one rule that makes this work
 
@@ -29,10 +30,11 @@ and regenerated, and the player only ever sees valid game states.
 | Doc | What it covers |
 |---|---|
 | [docs/VISION.md](docs/VISION.md) | The product vision, player experience, and non-negotiables |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design: engine, Director, canon, art pipeline, export |
-| [docs/ROADMAP.md](docs/ROADMAP.md) | Phased plan from text prototype to public game library |
+| [docs/STORY.md](docs/STORY.md) | The fixed story skeleton — both paths, the Reunion, the rules |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design: engine, Director, canon, art pipeline, Asset Studio |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | Phased plan from text prototype to the multiplayer Reunion |
 | [docs/DECISIONS.md](docs/DECISIONS.md) | Architecture Decision Records (why things are the way they are) |
-| [PLAYTEST.md](PLAYTEST.md) | How to run it yourself and what to look for |
+| [PLAYTEST.md](PLAYTEST.md) | How to run the text-era prototype and what to look for |
 | [CLAUDE.md](CLAUDE.md) | Instructions for AI coding agents working on this repo |
 
 ## Repository layout

@@ -1,204 +1,192 @@
 # Architecture
 
-This document describes the system that makes a real-time AI-authored game feasible,
-coherent, and always playable. Read [VISION.md](VISION.md) first.
+This document describes the system that makes a real-time AI-authored RPG feasible,
+coherent, and always playable. Read [VISION.md](VISION.md) and [STORY.md](STORY.md)
+first. Sections marked *(text era)* describe built systems that predate the pivot
+(ADR-0009) and are being evolved, not discarded.
 
 ## Overview
 
 ```
-┌──────────────────────────── Client (browser) ────────────────────────────┐
-│  React UI + PixiJS renderer                                              │
-│  Renders SceneSpecs. Captures actions, free text, timing signals.        │
-└──────────────▲──────────────────────────────────────────┬────────────────┘
-               │ SceneSpec (validated JSON)               │ PlayerAction
-┌──────────────┴──────────────────────────────────────────▼────────────────┐
-│                          Game Server (Node/TS)                           │
-│                                                                          │
-│  ┌────────────┐   ┌──────────────────────────────────────────────────┐   │
-│  │  Engine    │   │              AI Director (Claude API)            │   │
-│  │  (deter-   │   │  Profiler → Architect → Scene Writer → Checker   │   │
-│  │  ministic) │◄──┤  emits SceneSpecs, validated against the schema  │   │
-│  └────────────┘   └───────▲──────────────────────────┬───────────────┘   │
-│                           │ retrieval                │ commits           │
-│  ┌────────────────────────┴──────────────────────────▼───────────────┐   │
-│  │   World State:  Canon Ledger · Story Arc · Player Profile ·       │   │
-│  │                 Scene State · Asset Cache                         │   │
-│  └───────────────────────────────────────────────────────────────────┘   │
-│                                                                          │
-│  Art Pipeline: image model → pixelize/palette-lock → content-hash cache  │
-└──────────────────────────────────────────────────────────────────────────┘
+┌────────────────────────── Client: apps/game (Phaser 3) ──────────────────────────┐
+│  Top-down 2D renderer: tilemaps, sprites, movement, dialogue UI, menus.          │
+│  Presentation + input ONLY — no game rules live here.                            │
+│  Captures actions, free text, movement/timing signals.                           │
+└──────────────▲──────────────────────────────────────────────┬────────────────────┘
+               │ validated specs (maps, entities, dialogue)   │ PlayerAction
+┌──────────────┴──────────────────────────────────────────────▼────────────────────┐
+│                            Game Server (Node/TS)                                 │
+│                                                                                  │
+│  ┌────────────┐   ┌──────────────────────────────────────────────────────────┐   │
+│  │  Engine    │   │        AI Director (ModelClient — OpenAI default)        │   │
+│  │  (pure,    │   │  Profiler → Architect → World Writer → Continuity Check  │   │
+│  │  determin- │◄──┤  emits specs validated against packages/schema,          │   │
+│  │  istic)    │   │  constrained by the STORY.md skeleton                    │   │
+│  └────────────┘   └───────▲──────────────────────────────┬───────────────────┘   │
+│                           │ retrieval                    │ commits              │
+│  ┌────────────────────────┴──────────────────────────────▼───────────────────┐   │
+│  │  World State: Canon Ledger · Story Arc · Player Profile · Game State      │   │
+│  └───────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                  │
+│  Asset DB ◄── Asset Studio (apps/asset-studio): CC0 imports · sprite-as-data ·   │
+│               gpt-image-2 → processArt (grid/palette/outline) → catalog          │
+└──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-## 1. The Scene DSL — the contract
+## 1. The DSL — the contract
 
-The single most important artifact in the project. A **SceneSpec** is a JSON document,
-validated by Zod schemas in `packages/schema`, describing everything the engine needs to
-present one scene: setting, entities, dialogue, choices, free-text affordances, effects on
-state, art requests, and transition rules.
+The single most important artifact in the project. The Director emits JSON documents
+validated by Zod schemas in `packages/schema`. The text-era **SceneSpec** (narration,
+dialogue, choices, effects, art requests) evolves into a family of specs the Phaser
+client can render (DSL v1, Phase 4):
 
-Properties:
+- **MapSpec** — tile layers referencing asset-DB tilesets, collision, spawn points,
+  ambient/mood data.
+- **Placed entities** — NPCs, items, portals, triggers, with positions and interaction
+  affordances (talk / examine / use / custom verbs the engine knows).
+- **Dialogue & choices** — the scene-era constructs, now attached to entities and
+  triggers instead of floating as pages.
+- **Effects** — declarative state changes (`{op: "set", ...}`), never code. Unchanged.
+- **Quest specs** — objectives, tracking state, payoff conditions (Phase 6).
 
-- **Versioned.** Every SceneSpec carries `dslVersion`. Schemas only evolve additively
-  within a version; breaking changes bump the version and ship with a migration. Published
-  library universes must remain loadable forever.
-- **Closed-world.** The DSL can only express things the engine can render. If the Director
-  wants a new kind of interaction, the DSL and engine grow first (a development-time
-  change), then the Director may use it.
-- **Self-contained effects.** State changes are declarative (`effects: [{op: "set", ...}]`),
-  never code. The engine applies them; the Director predicts them.
+Properties (unchanged from the text era, they are the point):
 
-The DSL starts small (narration, dialogue, choices, free text, simple inventory/flags) and
-grows deliberately. Expressiveness is added by engineering, richness by the model.
+- **Versioned.** Every spec carries `dslVersion`. Additive evolution within a version;
+  breaking changes bump it and ship a migration. The pivot is such a bump.
+- **Closed-world.** The DSL can only express what the engine can render/resolve. New
+  interaction types grow engine-first (development time), then the Director may use them.
+- **Self-contained effects.** The engine applies them; the Director predicts them.
 
 ## 2. The Engine — deterministic and dumb on purpose
 
-A pure function over `(GameState, SceneSpec, PlayerAction) → GameState`. It renders specs,
-applies declared effects, enforces validity, and knows nothing about stories. All
-intelligence lives in the Director; all reliability lives in the engine. The engine is
-fully unit-testable without any AI involved.
+Pure functions over `(GameState, Spec, PlayerAction) → GameState` in `packages/engine`:
+movement legality, collision, trigger firing, interaction resolution, effect application,
+encounter rules. Zero AI/network dependencies, full unit-test coverage, no unseeded
+randomness.
+
+**The Phaser client is not the engine.** `apps/game` renders state and captures input;
+every rule that decides what a player action *does* lives in `packages/engine` where it
+is testable without a browser. This split is what keeps "it must always be playable"
+verifiable.
 
 ## 3. The AI Director
 
-A server-side orchestration layer over the Claude API. Default model:
-`claude-opus-4-8` with adaptive thinking (`thinking: {type: "adaptive"}`), streaming
-always on. Roles within the Director (these are prompt/pipeline stages, not necessarily
-separate services):
+A server-side orchestration layer targeting the `ModelClient` interface (ADR-0008 —
+OpenAI default, Anthropic supported; model IDs in `packages/director/src/config.ts`,
+roles declare a provider-neutral `tier`).
 
-| Stage | Job | Typical model/effort |
+| Stage | Job | Tier |
 |---|---|---|
-| **Profiler** | Turn raw play signals from the Anchor (and ongoing play) into the Player Profile | `claude-opus-4-8`, effort `low`–`medium` |
-| **Architect** | Own the full-game Story Arc: acts, beats, planned ending. Revise it when play diverges; never abandon coherence | `claude-opus-4-8`, effort `high` |
-| **Scene Writer** | Author the next SceneSpec(s) from the Arc + Canon + Profile + current state | `claude-opus-4-8`, effort `medium`–`high`, structured outputs (`output_config.format` with the SceneSpec JSON schema) |
-| **Continuity Checker** | Cheap pass that diffs a candidate SceneSpec against the Canon Ledger and rejects contradictions before the player sees them | `claude-haiku-4-5` |
+| **Profiler** | Turn play signals (movement, interactions, free text, pacing) into the Player Profile | strong, low effort |
+| **Architect** | Own the playthrough's Story Arc *within STORY.md's rails*: acts, beats, planted setups → payoffs, the path's threshold ending. Revise on drift; never abandon coherence | strong, high effort |
+| **World Writer** | Author the next specs (maps, entities, quests, dialogue) from Arc + Canon + Profile + state | strong, structured outputs |
+| **Continuity Checker** | Cheap gate diffing candidate specs against the Canon Ledger — with STORY.md seeds as highest-priority canon — rejecting contradictions before the player sees them | cheap |
 
-Structured outputs + Zod validation give a two-layer guarantee: the API constrains the
-shape, the server validates semantics (references resolve, effects are legal, canon not
-contradicted). Invalid specs are regenerated with the validation errors fed back — the
-player never sees a failure, only (rarely) a beat of extra latency.
+Structured outputs + Zod validation give a two-layer guarantee: the API constrains shape,
+the server validates semantics. Invalid specs are regenerated with validation errors fed
+back (max 2 retries + graceful degradation); the player sees latency, never failure.
 
-### Memory model (how coherence is maintained)
+### The story rails (new at the pivot)
 
-Context windows are big but playthroughs are bigger, so memory is layered:
+STORY.md's fixed facts are loaded as immutable, highest-priority canon at session start.
+The Architect's plan must route through the chosen path's register and end at its
+threshold; the Continuity Checker rejects any spec contradicting a seed. Path A and
+Path B have separate prompt framings (adventure vs. drama) and separate style bibles,
+fixed at development time (ADR-0011).
 
-- **Canon Ledger** — append-only list of facts committed as true ("the innkeeper's name is
-  Vess", "the player burned the archive"). Facts are extracted from every accepted scene.
-  Canon is never edited, only appended; retractions are new facts that explain the change
-  in-world. Relevant facts are retrieved (keyword/embedding) into the Scene Writer's
-  context each turn.
-- **Story Arc** — the Architect's living plan for the whole game: premise, acts, upcoming
-  beats, planted setups and their required payoffs, intended ending(s). Rewritten (not
-  appended) when the player derails it — the plan changes, canon never does.
-- **Player Profile** — structured preferences with confidence scores, updated continuously.
-- **Scene State** — the mechanical `GameState` (location, flags, inventory, party), owned
-  by the engine, summarized for prompts.
+### Memory model (unchanged)
+
+- **Canon Ledger** — append-only facts extracted from every accepted spec; retractions
+  are new facts. Relevant facts retrieved into the World Writer's context each turn.
+- **Story Arc** — the Architect's living plan; rewritten when play diverges. The plan
+  changes, canon never does.
+- **Player Profile** — structured preferences with confidence scores, updated
+  continuously. Now includes mechanical appetite (combat/exploration/dialogue/puzzle)
+  driving which systems the World Writer emphasizes.
+- **Game State** — the engine-owned mechanical state, summarized for prompts.
 
 ### Latency strategy
 
-Real-time generation must feel like a game, not a chatbot:
+- **Speculative generation** of adjacent areas/likely interactions in the background;
+  live generation covered by streamed dialogue and in-fiction masking otherwise.
+- **Prompt caching** via prefix discipline: frozen system prompt + DSL docs first,
+  canon/profile snapshots next, volatile per-turn state last. No timestamps/UUIDs in the
+  prefix; sorted-key serialization.
+- **A real map buys time.** Unlike the text era, the player can wander already-generated
+  space while the Director writes ahead — the game generates just past the player's
+  horizon.
 
-- **Speculative generation.** After presenting a scene, the Director immediately generates
-  likely next scenes for the top choices in the background. On action, the pre-generated
-  spec is served instantly (after a fast canon re-check); free-text or unpredicted actions
-  fall back to live generation with streamed narration to cover the wait.
-- **Streaming everywhere.** Narration and dialogue stream token-by-token into the client —
-  this is a natural fit for a text-forward game and hides most latency.
-- **Prompt caching.** Requests are structured for prefix stability: frozen system prompt +
-  DSL documentation first, canon/profile snapshots next (breakpointed with
-  `cache_control`), volatile per-turn state last. No timestamps or UUIDs in the prefix.
-- **In-fiction latency masking.** Scene transitions, art reveals, and "the world holding
-  its breath" moments are legitimate dramatic beats that buy generation time.
+## 4. Art: three sources, one gate, one database (ADR-0011)
 
-## 4. Art pipeline (pixel art)
+Goal: every image in the game looks like it came from one game, at $0 beyond the OpenAI
+budget.
 
-Goal: every image in a playthrough looks like it came from one game.
+**Sources:**
+1. **CC0 base library** — curated Kenney/OpenGameArt tilesets, base characters, props;
+   recolored/recombined for variety; attribution recorded per asset.
+2. **Sprite-as-data** — the model emits small sprites/icons as palette-indexed pixel
+   grids (validated JSON), rendered to PNG deterministically. Bespoke content priced at
+   API calls already being paid for.
+3. **`gpt-image-2`** — hero assets (key art, portraits, unique monsters) behind the
+   existing `ImageProvider` seam.
 
-1. The Scene Writer emits **art requests**, not images: `{kind: "background" | "sprite" |
-   "portrait" | "item", subject, mood, paletteRef, sizeClass}` plus the universe's locked
-   **style bible** (palette, grid size, outline rules, perspective) that the Director
-   authors once per playthrough during the genre reveal.
-2. An image model generates the raw image from request + style bible.
-3. Deterministic post-processing enforces the style: downscale to the pixel grid, quantize
-   to the universe palette, optional outline pass. This step is what makes disparate
-   generations cohere.
-4. **Content-hash caching**: `hash(request + styleBible)` → asset. Recurring characters and
-   locations reuse their art; published universes ship with their asset cache so replays
-   are cheap and visually identical.
-5. **Placeholder fallback**: procedurally generated silhouettes/tiles render instantly and
-   are swapped when the real asset arrives. Art is progressive enhancement — the game is
-   never blocked on an image.
+**The gate:** every asset from every source passes the deterministic pipeline in
+`packages/art` — `processArt`: pixelize to the style's grid → quantize to its locked
+palette → optional outline. This normalizer is what makes disparate sources cohere.
+Then Asset Studio validation: dimensions, palette compliance, transparency, animation
+frame consistency, license metadata. Only then does it enter the **asset database**
+(content-addressed storage + queryable catalog in `packages/library`).
 
-The text-only game must be excellent first. The art pipeline attaches to art requests in
-the DSL without touching the engine's core loop.
+**The operator:** `apps/asset-studio` is CLI-first and **agent-operable** — Claude
+Code/Codex drive it conversationally ("create a village tileset" → clarifying questions →
+generation/import → validation → catalog). Humans get a preview page; agents get exit
+codes and JSON.
 
-### Notes for a real image provider (future)
+**Style bibles** are per-path (her fantasy world / his real world), authored at
+development time, locked. Placeholder-first rendering survives: procedural placeholders
+render instantly, real assets swap in; no gameplay path blocks on an image.
 
-Steps 1, 3, 4 and 5 are built (`packages/art`). Step 2 is a `ProceduralPlaceholderProvider`
-standing in for a real model behind the `ImageProvider` interface. Swapping in a real one
-is deliberately a contained job — implement one interface, change one config value — and
-**`gpt-image-2` is the first candidate**, since it is already available on the project's
-OpenAI account. Deferred on purpose: the text loop deserves proper playtesting first, and
-placeholders make the layout, caching, and palette-lock behaviour testable for free.
+### Notes for the gpt-image-2 provider (Phase 5)
 
-When it's time, the things that will bite:
+- **Do not post-process inside the provider** — `processArt` is applied uniformly by
+  `AssetCache.getOrGenerate`; the look is enforced in exactly one place.
+- **Return an isolated subject on transparency** for sprites/portraits/items: request a
+  flat uniform background and chroma-key it out; quantize/outline assume transparent
+  means "not the subject".
+- **Bump `PIPELINE_VERSION`** on any change that alters output bytes; it is part of the
+  cache key and invalidates every cached asset globally.
+- Cache key already covers request + style + pipeline version — repeat views are free.
 
-- **Do not post-process inside the provider.** `processArt` is applied uniformly to every
-  provider's output by `AssetCache.getOrGenerate`, so the universe's look is enforced in
-  exactly one place. A provider that pre-pixelizes its own output breaks that guarantee.
-- **Return an isolated subject on transparency** for sprites, portraits, and items. Ask
-  the model for a flat, uniform background and chroma-key it out before returning; the
-  quantize and outline passes both assume transparent already means "not the subject".
-- **Cost and latency move from zero to real.** The cache key already covers request +
-  style + pipeline version, so repeat views are free, but a first-time scene would now
-  wait on an image. Keep the placeholder as the immediate render and swap the real asset
-  in when it arrives — art is progressive enhancement (step 5), and that promise is what
-  makes a slow provider acceptable.
-- **Bump `PIPELINE_VERSION`** on any change that alters output bytes; it is folded into the
-  cache key, so bumping it invalidates every cached asset globally.
-- **Published bundles ship their asset cache.** Universes exported before a provider swap
-  keep the art they were published with, which is the intended behaviour — a universe's
-  look is part of its identity (ADR-0006).
+## 5. Persistence & the asset database
 
-## 5. Export & the public library
-
-A finished playthrough exports a **Universe Bundle**:
-
-```
-universe.json     manifest: title, description, dslVersion, style bible, credits
-canon.jsonl       the full Canon Ledger
-arc.json          the final Story Arc (acts, beats, ending as played)
-anchor-exit.json  the profile/genre state at the end of the Anchor (the branch point)
-assets/           content-hash-addressed art cache
-```
-
-Replaying a published universe: the Director is loaded with the bundle's canon and arc as
-**fixed constraints** instead of blank slates. Major beats and world facts are immutable;
-scenes, dialogue, minor characters, and the player's own path through the beats are
-generated fresh. The original creator's game is recognizable; the new player's experience
-is their own. Bundles are validated against their `dslVersion` on import, and old versions
-remain supported via migrations.
-
-Moderation note: published bundles are user-generated content and will need a
-review/report pipeline before the library is public. Tracked in the roadmap, not designed
-yet.
+File-based under `UNWRITTEN_HOME` (ADR-0007): sessions, canon, profiles as validated
+JSON; the asset DB as content-addressed files + a catalog index. The public universe
+library is cut (ADR-0012); the Reunion (Phase 7) instead requires both paths' canon to
+export/merge cleanly — that requirement shapes canon storage now. A real database appears
+only if/when multiplayer demands it, contained inside `packages/library`.
 
 ## 6. Tech stack
 
 | Layer | Choice | Why |
 |---|---|---|
-| Language | TypeScript everywhere | One language, shared schema package between client/server |
+| Language | TypeScript everywhere | One language; schema package shared verbatim client/server |
 | Schemas | Zod (+ generated JSON Schema for structured outputs) | Runtime validation + static types from one source |
-| Client | React + PixiJS | Web-first distribution; PixiJS handles pixel-art rendering well |
-| Server | Node.js (Fastify) + WebSocket for play sessions | Streaming-friendly |
-| AI | Claude API (`@anthropic-ai/sdk`) — Opus 4.8 default, Haiku 4.5 for cheap checks | See Director table |
-| Persistence | SQLite via Drizzle to start (playthroughs, canon, assets); Postgres when the library goes multi-user | Start simple |
+| Game client | **Phaser 3** (`apps/game`) | ADR-0010: free, TS-native, tilemaps/camera/input built in, agent-friendly all-text workflow |
+| Legacy client | React (`apps/web`) | Text-era client; retire or repurpose as debug console at Phaser parity |
+| Server | Node.js (Fastify), WebSocket for play sessions | Streaming-friendly; multiplayer-ready seam |
+| AI | `ModelClient` seam — OpenAI default (ADR-0008) | Provider is configuration, not architecture |
+| Art tooling | `apps/asset-studio` + `packages/art` | ADR-0011: one gate for three sources |
+| Packaging (later) | Capacitor (iOS/Android), Tauri (Win/macOS) | Free toolchains; zero-spend rule |
+| Persistence | Files under `UNWRITTEN_HOME` (ADR-0007) | Zero infrastructure until multiplayer forces the question |
 | Monorepo | npm workspaces | No extra tooling until needed |
 
 ## 7. Security & cost guardrails
 
-- API keys live server-side only; the client never talks to the Claude API directly.
-- Per-session token budgets and per-scene `max_tokens` caps; the Director degrades
-  gracefully (shorter scenes, fewer speculative branches) as budget depletes.
-- Player free-text is untrusted input: it is data inside prompts, never instructions.
-  The Director's system prompt establishes that player text describes *in-fiction actions*
-  only, and the validation layer means prompt-injection can at worst produce weird fiction,
-  never engine-level effects.
+- API keys live server-side only; the client never talks to any model API directly.
+- Per-session token budgets and per-call `max_tokens` caps; the Director degrades
+  gracefully (smaller areas, fewer speculative branches) as budget depletes.
+- Player free text is untrusted data inside prompts — framed as in-fiction action
+  description, never instructions. Validation means prompt injection can at worst
+  produce weird fiction, never engine-level effects.
+- Zero-spend rule (VISION.md): no paid services or assets; OpenAI API usage (story +
+  gpt-image-2) is the only cost. Free/open-source everything else.

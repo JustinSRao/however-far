@@ -104,3 +104,96 @@ question).
   content last) is what earns the hit, and it is unchanged.
 - **Thinking budget** maps onto `reasoning_effort`; our two levels above "high" collapse
   onto it.
+
+## ADR-0009: Pivot — fixed dual-POV story skeleton, real RPG, not an adaptive novel
+
+**Status:** Accepted · 2026-07-22 · amends the premise behind ADR-0005 and VISION.md
+
+The genre-neutral, "game invents its own genre" premise is replaced by a **hand-authored
+story skeleton** ([STORY.md](STORY.md)): a dual-POV story (her isekai path / his
+psychological-drama path) with fixed seed facts, a shared hand-authored Prologue as the
+new Anchor, and path endings that only resolve in a (long-term) cross-platform
+multiplayer Reunion. The product is a **top-down 2D pixel-art RPG**, not a text-forward
+interactive novel.
+
+**Why:** the project owner's call. The owner authored this story, wants a real game with
+mechanics/art/UI, and judged the text-forward experience to be a choose-your-own-adventure
+novel rather than a game.
+
+**What survives unchanged:** the data-not-code invariant (ADR-0001), the deterministic
+engine discipline, canon ledger (ADR-0004), Story Arc planning, player profiling, the
+validation/retry loop, prompt-cache discipline, and the pixel post-processing pipeline.
+They now operate *inside the rails* of STORY.md instead of a blank slate.
+
+**Consequences:** STORY.md gains Anchor-level protection (never generated, never
+contradicted; its seeds are highest-priority canon). The Profiler tunes tone, pacing, and
+mechanical emphasis *within* the chosen path's register, never across it. The DSL must
+grow from scene-description to world-description (maps, movement, encounters) — see
+ADR-0010.
+
+## ADR-0010: Phaser 3 + TypeScript is the game engine
+
+**Status:** Accepted · 2026-07-22 · amends ADR-0002 (client layer)
+
+The game client is built on **Phaser 3** in TypeScript inside the existing monorepo
+(`apps/game`), replacing the React/DOM presentation as the primary client. Distribution
+remains web-first; iOS/Android arrive later via Capacitor and Windows/macOS via Tauri —
+all free toolchains.
+
+**Why (vs. Godot 4):** Godot exports natively everywhere but pulls the client out of the
+TypeScript monorepo — the shared Zod schema package (the project's single source of
+truth) would need duplication and a second validation layer, and Godot's editor-centric,
+partly-binary workflow is hostile to agent-driven development. Phaser keeps one language,
+one schema package shared verbatim between Director and renderer, everything diffable
+text, and costs nothing. **Why (vs. growing the custom PixiJS engine):** Phaser ships
+tilemaps, camera, input, physics, and scene management we would otherwise rebuild.
+
+**Consequences:** the deterministic-core rule is preserved by keeping game *rules*
+(movement legality, effect application, encounter resolution) in `packages/engine` as
+pure functions; Phaser code is presentation and input only, and is allowed to be
+untestable-by-unit-test. The DSL grows map/entity/interaction specs the Phaser client can
+render. `apps/web` (React) remains as a legacy/text client until the Phaser client
+reaches parity, then is retired or repurposed as the debug console.
+
+## ADR-0011: Hybrid art strategy behind one agent-operable Asset Studio
+
+**Status:** Accepted · 2026-07-22 · extends ADR-0005
+
+Art comes from three sources: (1) a curated **CC0 base library** (Kenney, OpenGameArt —
+tilesets, base characters) recolored/recombined by the pipeline; (2) **model-authored
+sprite data** — palette-indexed pixel grids emitted as validated JSON; (3) **`gpt-image-2`
+generation** for hero assets (within the owner's OpenAI budget, the only permitted spend).
+
+Every asset, regardless of source, passes through the existing deterministic
+post-processing (`processArt`: grid → palette quantize → outline) and into a
+content-addressed **asset database** shared across playthroughs.
+
+The **Asset Studio** (`apps/asset-studio`) is the single gate: a CLI-first, agent-operable
+tool that imports, validates (dimensions, palette compliance, transparency, animation
+frame consistency), normalizes, previews, and catalogs assets. Agents (Claude Code,
+Codex) drive it directly — "make me a village tileset" is a conversation with an agent
+that operates the Studio, asks clarifying questions, and commits validated assets.
+
+**Why:** CC0 gives reliable bulk quality at $0; sprite-as-data makes bespoke content from
+API calls already being paid for; gpt-image-2 covers what both do badly. One gate keeps
+the game's look coherent no matter the source.
+
+**Consequences:** no asset enters the database without passing Studio validation. CC0
+attribution/licenses are recorded per asset in the catalog. The old universe-locked style
+bible becomes **per-path style bibles** (her world / his world), fixed at development
+time rather than generated at play time.
+
+## ADR-0012: Profiling stays core; the public universe library is cut
+
+**Status:** Accepted · 2026-07-22 · supersedes ADR-0006, narrows ADR-0007
+
+The Player Profile and adaptive generation remain central. The **public library of
+exported universes** (export/browse/replay, ADR-0006) is cut: with a fixed story
+skeleton, "publish your universe" no longer carries the product identity, and its open
+cost/moderation questions die with it.
+
+`packages/library` survives in its other role — session persistence and canon storage
+(ADR-0007) — and gains the shared **asset database**. Universe-bundle export/replay code
+is removed when it gets in the way, not preserved. The bundle format's lesson (canon must
+export/merge cleanly) is retained as a requirement on both paths' canon for the
+multiplayer Reunion, where two playthroughs' canons merge into one finale.

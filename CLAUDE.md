@@ -1,6 +1,7 @@
 # CLAUDE.md — instructions for AI coding agents
 
-This repo is **Unwritten**: a game generated in real time by an AI Director as the player
+This repo is **Unwritten**: a top-down 2D pixel-art RPG whose world is generated in real
+time by an AI Director — within a fixed, hand-authored story skeleton — as the player
 plays. You are working on the *development* of that system. Read this file fully; it
 encodes the project's invariants.
 
@@ -8,6 +9,8 @@ encodes the project's invariants.
 
 - `docs/VISION.md` — what we're building and the non-negotiables. Read before any
   product-shaped decision.
+- `docs/STORY.md` — the fixed story skeleton (dual-POV: her isekai path / his drama
+  path). Owner-authored. Read before touching Director prompts or prologue content.
 - `docs/ARCHITECTURE.md` — system design. Read before touching Director, engine, or schema.
 - `docs/DECISIONS.md` — ADRs. If your change contradicts an ADR, stop and discuss;
   reversing one requires a new superseding ADR, not a silent change.
@@ -25,11 +28,21 @@ encodes the project's invariants.
    injected seed.
 3. **Canon is append-only.** Never write code that edits or deletes canon facts;
    supersession is a new fact.
-4. **The Anchor is hand-written.** Files under the anchor content directory are authored
-   fixtures — never generate or "improve" them with AI output.
+4. **The story skeleton and the Prologue are hand-written.** `docs/STORY.md` and the
+   prologue content fixtures are owner-authored — never generate, contradict, or
+   "improve" them with AI output. STORY.md's seed facts are highest-priority canon.
 5. **Schema changes are additive within a `dslVersion`.** Breaking changes bump the
-   version and ship a migration. Published universe bundles must load forever.
-6. **API keys are server-side only.** The client never calls the Claude API.
+   version and ship a migration.
+6. **API keys are server-side only.** The client never calls any model API.
+7. **The Phaser client is presentation only.** Game rules (movement legality, collision
+   outcomes, interaction/effect resolution) live in `packages/engine` as tested pure
+   functions; `apps/game` renders state and captures input, nothing more (ADR-0010).
+8. **No asset enters the game without the Asset Studio gate** — `processArt`
+   normalization + validation (size, palette, transparency, license metadata), whatever
+   the source: CC0 import, sprite-as-data, or gpt-image-2 (ADR-0011).
+9. **Zero spend beyond the OpenAI API.** No paid services, infra, or assets — free and
+   open-source everything else. If a task seems to need paid anything, stop and ask the
+   owner.
 
 ## Model API usage (for Director code)
 
