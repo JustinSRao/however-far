@@ -3,6 +3,7 @@ import type { SceneSpec } from "@unwritten/schema";
 import { SceneView } from "../components/SceneView.js";
 
 export interface PlayScreenProps {
+  sessionId: string;
   scene: SceneSpec;
   busy: boolean;
   error: string | null;
@@ -18,6 +19,7 @@ function isAnchorScene(sceneId: string): boolean {
 }
 
 export function PlayScreen({
+  sessionId,
   scene,
   busy,
   error,
@@ -38,7 +40,13 @@ export function PlayScreen({
       {error ? <p className="banner banner--error">{error}</p> : null}
       {ackText ? <p className="banner banner--ack">{ackText}</p> : null}
 
-      <SceneView scene={scene} busy={busy} onChoice={onChoice} onFreeText={onFreeText} />
+      <SceneView
+        sessionId={sessionId}
+        scene={scene}
+        busy={busy}
+        onChoice={onChoice}
+        onFreeText={onFreeText}
+      />
 
       {busy ? <p className="awaiting">…the world is being written…</p> : null}
     </div>

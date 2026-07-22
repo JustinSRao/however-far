@@ -10,6 +10,7 @@
     "start": "tsx src/index.ts"
   },
   "dependencies": {
+    "@unwritten/art": "*",
     "@unwritten/director": "*",
     "@unwritten/library": "*",
     "@unwritten/schema": "*",

@@ -1,27 +1,53 @@
-import type { ReactElement } from "react";
+import { useEffect, useState, type ReactElement } from "react";
 import type { ArtRequest } from "@unwritten/schema";
+import { artUrl } from "../api.js";
 
 export interface ArtSlotProps {
+  sessionId: string;
   request: ArtRequest;
   label?: string;
 }
 
 /**
- * The art pipeline (image model → pixelize/palette-lock → content-hash
- * cache, see docs/ARCHITECTURE.md §4) is a separate workstream. Wherever a
- * SceneSpec carries an ArtRequest, this renders a clearly-marked placeholder
- * box naming the request's subject instead of an image. Swap the body for an
- * <img src={assetUrl(request)}> once the pipeline exists — the rest of the
- * layout (sizing, placement) is meant to already be correct.
+ * Renders the asset the art pipeline produced for this request, falling back
+ * to a labelled placeholder box whenever there is no image to show: during the
+ * Anchor (the universe has no StyleBible until the genre is revealed), or if
+ * the stylist degraded. The layout is identical either way, so a scene never
+ * reflows when art appears or fails.
+ *
+ * Images are rendered pixel-exact (`image-rendering: pixelated` in the
+ * stylesheet) — the pipeline already quantized them to the universe's grid and
+ * palette, so any smoothing here would undo that work.
  */
-export function ArtSlot({ request, label }: ArtSlotProps): ReactElement {
+export function ArtSlot({ sessionId, request, label }: ArtSlotProps): ReactElement {
+  const src = artUrl(sessionId, request);
+  const [failed, setFailed] = useState(false);
+
+  // A new request means a new URL — give it a fresh chance to load.
+  useEffect(() => {
+    setFailed(false);
+  }, [src]);
+
+  const className = `art-slot art-slot--${request.sizeClass} art-slot--${request.kind}`;
+  const caption = label ?? request.subject;
+
+  if (failed) {
+    return (
+      <div className={className} title={`art request — ${request.kind}: ${request.mood}`}>
+        <span className="art-slot__kind">{request.kind}</span>
+        <span className="art-slot__subject">{caption}</span>
+      </div>
+    );
+  }
+
   return (
-    <div
-      className={`art-slot art-slot--${request.sizeClass} art-slot--${request.kind}`}
-      title={`art request — ${request.kind}: ${request.mood}`}
-    >
-      <span className="art-slot__kind">{request.kind}</span>
-      <span className="art-slot__subject">{label ?? request.subject}</span>
+    <div className={className}>
+      <img
+        className="art-slot__image"
+        src={src}
+        alt={caption}
+        onError={() => setFailed(true)}
+      />
     </div>
   );
 }

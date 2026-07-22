@@ -1,4 +1,4 @@
-import type { PlayerAction, SceneSpec, SessionSave } from "@unwritten/schema";
+import type { ArtRequest, PlayerAction, SceneSpec, SessionSave } from "@unwritten/schema";
 
 /**
  * Typed client for apps/server's HTTP API. This is the only place the web
@@ -80,6 +80,22 @@ export function sendAction(sessionId: string, action: PlayerAction): Promise<Tur
     method: "POST",
     body: JSON.stringify(action),
   });
+}
+
+/**
+ * URL of the rendered asset for one ArtRequest in one universe. Art is
+ * session-scoped because the StyleBible that governs it is: the same request
+ * in two universes is two different images. Used as an <img src>, so the
+ * browser cache does the work — the server marks these immutable.
+ */
+export function artUrl(sessionId: string, request: ArtRequest): string {
+  const params = new URLSearchParams({
+    kind: request.kind,
+    subject: request.subject,
+    mood: request.mood,
+    sizeClass: request.sizeClass,
+  });
+  return `/api/sessions/${encodeURIComponent(sessionId)}/art?${params.toString()}`;
 }
 
 export function fetchSessions(): Promise<SessionInfo[]> {

@@ -44,6 +44,83 @@ describe("GET routes", () => {
   });
 });
 
+describe("GET /api/sessions/:id/art", () => {
+  const ART_QUERY = "kind=item&subject=a+brass+key&mood=quiet+dread&sizeClass=small";
+
+  it("renders a PNG once the universe has a style, and caches it byte-identically", async () => {
+    const fake = new FakeModelClient();
+    const app = buildServer({ model: fake });
+
+    const created = await app.inject({
+      method: "POST",
+      url: "/api/sessions",
+      payload: { mode: "new" },
+    });
+    const id = (created.json() as { sessionId: string }).sessionId;
+
+    // Still in the Anchor: no StyleBible yet, so there is no art to serve and
+    // the client falls back to its placeholder slot.
+    const early = await app.inject({ method: "GET", url: `/api/sessions/${id}/art?${ART_QUERY}` });
+    expect(early.statusCode).toBe(404);
+
+    await app.inject({
+      method: "POST",
+      url: `/api/sessions/${id}/action`,
+      payload: { type: "choice", choiceId: "join-fire" },
+    });
+    await app.inject({
+      method: "POST",
+      url: `/api/sessions/${id}/action`,
+      payload: { type: "choice", choiceId: "share-bread" },
+    });
+    fake.push(
+      makeProfile(),
+      makeArc(),
+      makeStyleBible(),
+      makeWriterOutput("first-generated"),
+      { ok: true },
+      { facts: [] },
+    );
+    await app.inject({
+      method: "POST",
+      url: `/api/sessions/${id}/action`,
+      payload: { type: "choice", choiceId: "take-knife" },
+    });
+
+    const res = await app.inject({ method: "GET", url: `/api/sessions/${id}/art?${ART_QUERY}` });
+    expect(res.statusCode).toBe(200);
+    expect(res.headers["content-type"]).toBe("image/png");
+    // PNG magic number — this is a real image, not an error page.
+    expect([...res.rawPayload.subarray(0, 4)]).toEqual([0x89, 0x50, 0x4e, 0x47]);
+
+    // Same request again: served from the content-hash cache, same bytes.
+    const again = await app.inject({ method: "GET", url: `/api/sessions/${id}/art?${ART_QUERY}` });
+    expect(again.rawPayload.equals(res.rawPayload)).toBe(true);
+
+    await app.close();
+  });
+
+  it("rejects a malformed art request with 400", async () => {
+    const app = buildServer({ model: new FakeModelClient() });
+    const res = await app.inject({
+      method: "GET",
+      url: "/api/sessions/whatever/art?kind=not-a-kind&subject=x&mood=y&sizeClass=small",
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it("404s for an unknown session", async () => {
+    const app = buildServer({ model: new FakeModelClient() });
+    const res = await app.inject({
+      method: "GET",
+      url: `/api/sessions/no-such-session/art?${ART_QUERY}`,
+    });
+    expect(res.statusCode).toBe(404);
+    await app.close();
+  });
+});
+
 describe("POST /api/sessions — no API key configured", () => {
   const savedKey = process.env["ANTHROPIC_API_KEY"];
 

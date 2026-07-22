@@ -3,6 +3,7 @@ import { AnthropicModelClient, type ModelClient } from "@unwritten/director";
 import { SessionManager } from "./sessionManager.js";
 import { registerSessionRoutes } from "./routes/sessions.js";
 import { registerLibraryRoutes } from "./routes/library.js";
+import { registerArtRoutes } from "./routes/art.js";
 
 export interface BuildServerOptions {
   /**
@@ -28,6 +29,7 @@ export function buildServer(opts: BuildServerOptions = {}): FastifyInstance {
 
   registerSessionRoutes(app, sessions);
   registerLibraryRoutes(app);
+  registerArtRoutes(app, sessions);
 
   return app;
 }

@@ -4,6 +4,7 @@ import { ArtSlot } from "./ArtSlot.js";
 import { useTypewriter } from "../useTypewriter.js";
 
 export interface SceneViewProps {
+  sessionId: string;
   scene: SceneSpec;
   busy: boolean;
   onChoice: (choiceId: string) => void;
@@ -19,7 +20,13 @@ function hasArt(e: Entity): e is Entity & { art: ArtRequest } {
   return e.art !== undefined;
 }
 
-export function SceneView({ scene, busy, onChoice, onFreeText }: SceneViewProps): ReactElement {
+export function SceneView({
+  sessionId,
+  scene,
+  busy,
+  onChoice,
+  onFreeText,
+}: SceneViewProps): ReactElement {
   const [freeText, setFreeText] = useState("");
   const { shown: narration, done: narrationDone } = useTypewriter(scene.narration, true);
 
@@ -45,7 +52,11 @@ export function SceneView({ scene, busy, onChoice, onFreeText }: SceneViewProps)
       </header>
 
       {scene.location.art ? (
-        <ArtSlot request={scene.location.art} label={scene.location.name} />
+        <ArtSlot
+          sessionId={sessionId}
+          request={scene.location.art}
+          label={scene.location.name}
+        />
       ) : null}
 
       <p className="scene__narration">
@@ -56,7 +67,7 @@ export function SceneView({ scene, busy, onChoice, onFreeText }: SceneViewProps)
       {entityArt.length > 0 ? (
         <div className="scene__entities">
           {entityArt.map((e) => (
-            <ArtSlot key={e.id} request={e.art} label={e.name} />
+            <ArtSlot key={e.id} sessionId={sessionId} request={e.art} label={e.name} />
           ))}
         </div>
       ) : null}

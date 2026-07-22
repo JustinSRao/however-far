@@ -43,12 +43,13 @@ The whole vision, minus graphics, in a terminal/basic web UI.
       nothing until animated sprites exist. Revisit if that changes.
 - [x] Pixel-art pipeline: provider seam → pixelize/palette-lock/outline → content-hash
       cache, placeholder-first rendering
-- [ ] Serve generated assets from the server and render them in the web client's art
-      slots (the two halves exist; connecting them is the next step)
-- [ ] Style bible generation at genre-reveal time (the pipeline consumes a StyleBible;
-      nothing authors one yet)
-- [ ] Real image-model provider behind `ImageProvider`
-- [ ] Portraits for recurring characters, backgrounds per location
+- [x] Serve generated assets from the server (`GET /api/sessions/:id/art`) and render
+      them pixel-exact in the web client's art slots
+- [x] Style bible generation at genre-reveal time (Stylist role, locked per universe,
+      inherited by replays)
+- [ ] Real image-model provider behind `ImageProvider` (placeholders render today)
+- [ ] Portraits for recurring characters, backgrounds per location — the Scene Writer
+      emits art requests, but nothing yet makes a returning character reuse one
 
 ## Phase 4 — The library
 

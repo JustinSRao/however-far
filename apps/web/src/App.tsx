@@ -78,6 +78,7 @@ export function App(): ReactElement {
     return (
       <main className="app">
         <PlayScreen
+          sessionId={sessionId}
           scene={view.scene}
           busy={busy}
           error={error}
