@@ -1,0 +1,19 @@
+{
+  "name": "@unwritten/asset-studio",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "start": "tsx src/main.ts"
+  },
+  "dependencies": {
+    "@unwritten/art": "*",
+    "@unwritten/schema": "*",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0"
+  }
+}

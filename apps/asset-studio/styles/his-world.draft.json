@@ -1,0 +1,13 @@
+{
+  "paletteName": "his-world-draft",
+  "colors": [
+    "#10121c", "#2c1e31", "#6b2643", "#ac2847",
+    "#dfa06e", "#e8d282", "#f7f3b7", "#b0a7b8",
+    "#7f708a", "#4a4b5b", "#21181b", "#5c8b93",
+    "#3e3b65", "#89423f", "#d1b48c", "#eae4dd"
+  ],
+  "gridSize": 32,
+  "outline": "selective",
+  "perspective": "top-down 3/4 view",
+  "keywords": ["contemporary", "muted", "melancholy", "dusk", "quiet"]
+}
