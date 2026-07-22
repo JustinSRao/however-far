@@ -1,7 +1,7 @@
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { SessionSave, UniverseBundle } from "@unwritten/schema";
+import { AreaSessionSave, SessionSave, UniverseBundle } from "@unwritten/schema";
 
 /**
  * File-based persistence (see ADR-0007): one JSON file per session/bundle
@@ -12,7 +12,7 @@ export function storeRoot(): string {
   return process.env["UNWRITTEN_HOME"] ?? join(homedir(), ".unwritten");
 }
 
-function dir(kind: "sessions" | "bundles"): string {
+function dir(kind: "sessions" | "bundles" | "world-sessions"): string {
   const d = join(storeRoot(), kind);
   mkdirSync(d, { recursive: true });
   return d;
@@ -51,6 +51,47 @@ export function listSessions(): SessionInfo[] {
         phase: s.phase,
         updatedAt: s.updatedAt,
         scenesPlayed: s.state.visitedSceneIds.length,
+      });
+    } catch {
+      // Unreadable saves are skipped, never fatal.
+    }
+  }
+  return out.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
+
+export function saveWorldSession(session: AreaSessionSave): string {
+  const file = join(dir("world-sessions"), `${safeName(session.id)}.json`);
+  writeFileSync(file, JSON.stringify(session, null, 2), "utf8");
+  return file;
+}
+
+export function loadWorldSession(id: string): AreaSessionSave {
+  const file = join(dir("world-sessions"), `${safeName(id)}.json`);
+  return AreaSessionSave.parse(JSON.parse(readFileSync(file, "utf8")));
+}
+
+export interface WorldSessionInfo {
+  id: string;
+  phase: AreaSessionSave["phase"];
+  path: AreaSessionSave["path"];
+  updatedAt: string;
+  areasVisited: number;
+}
+
+export function listWorldSessions(): WorldSessionInfo[] {
+  const out: WorldSessionInfo[] = [];
+  for (const f of readdirSync(dir("world-sessions"))) {
+    if (!f.endsWith(".json")) continue;
+    try {
+      const s = AreaSessionSave.parse(
+        JSON.parse(readFileSync(join(dir("world-sessions"), f), "utf8")),
+      );
+      out.push({
+        id: s.id,
+        phase: s.phase,
+        path: s.path,
+        updatedAt: s.updatedAt,
+        areasVisited: s.state.visitedAreaIds.length,
       });
     } catch {
       // Unreadable saves are skipped, never fatal.

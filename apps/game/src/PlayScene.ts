@@ -9,7 +9,14 @@ import {
   tryMove,
   type Direction,
 } from "./deps.js";
-import { followTransition, newWorld, type World } from "./world.js";
+import {
+  connect,
+  followTransition,
+  sendAction,
+  ServerError,
+  type Session,
+  type World,
+} from "./world.js";
 import * as ui from "./ui.js";
 
 export const TILE = 48;
@@ -20,7 +27,8 @@ const MOVE_MS = 140;
  * this scene draws state and forwards key presses.
  */
 export class PlayScene extends Phaser.Scene {
-  private world!: World;
+  private world?: World;
+  private session: Session = { mode: "local" };
   private player!: Phaser.GameObjects.Rectangle;
   private mapLayer!: Phaser.GameObjects.Container;
   private entityLayer!: Phaser.GameObjects.Container;
@@ -32,7 +40,13 @@ export class PlayScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.world = newWorld();
+    void connect().then(({ session, world }) => {
+      this.session = session;
+      this.world = world;
+      ui.hideVeil();
+      this.buildArea();
+      ui.showNarration(world.area.description);
+    });
 
     const kb = this.input.keyboard;
     if (!kb) throw new Error("keyboard input unavailable");
@@ -53,11 +67,11 @@ export class PlayScene extends Phaser.Scene {
       kb.on(`keydown-${["ONE", "TWO", "THREE", "FOUR"][n - 1]}`, () => this.pickChoice(n));
     }
 
-    this.buildArea();
-    ui.showNarration(this.world.area.description);
+    ui.showVeil("Unwritten", "Opening the evening…", "");
   }
 
   override update(): void {
+    if (!this.world) return;
     this.updateHud();
     if (this.moving || ui.panelState().mode !== "closed" || ui.veilOpen()) return;
 
@@ -90,64 +104,105 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private visibleEntities(): PlacedEntity[] {
-    return this.world.area.entities.filter(
+    const w = this.world;
+    if (!w) return [];
+    return w.area.entities.filter(
       (e) =>
         !(
           e.role === "item" &&
           e.interaction?.once === true &&
-          interactionUsed(this.world.state, this.world.area, e.id)
+          interactionUsed(w.state, w.area, e.id)
         ),
     );
   }
 
+  /** Mirror an action to the authoritative server session; local play already applied it. */
+  private mirror(action: Parameters<typeof sendAction>[1]): void {
+    if (this.session.mode !== "server") return;
+    void sendAction(this.session, action).catch(() => {
+      // The optimistic local engine result stands; signals catch up next action.
+    });
+  }
+
   private tryInteract(): void {
-    if (ui.panelState().mode !== "closed" || ui.veilOpen() || this.moving) return;
-    const target = reachableEntities(this.world.state, this.world.area)[0];
+    const w = this.world;
+    if (!w || ui.panelState().mode !== "closed" || ui.veilOpen() || this.moving) return;
+    const target = reachableEntities(w.state, w.area)[0];
     if (!target) return;
-    const outcome = runInteraction(this.world.state, this.world.area, target.id);
-    this.world = { ...this.world, state: outcome.state };
+    const outcome = runInteraction(w.state, w.area, target.id);
+    this.world = { ...w, state: outcome.state };
     if (outcome.kind === "afterText") {
       ui.showNarration(outcome.text);
     } else {
-      const names = new Map(this.world.area.entities.map((e) => [e.id, e.name]));
+      const names = new Map(w.area.entities.map((e) => [e.id, e.name]));
       ui.showDialogue(outcome.lines, outcome.choices, names, target.id);
     }
+    this.mirror({ type: "interact", entityId: target.id });
     this.redrawEntities();
   }
 
   private pickChoice(n: number): void {
+    const w = this.world;
+    if (!w) return;
     const picked = ui.choiceAt(n);
     if (!picked) return;
     const { state, reply } = applyConvoChoice(
-      this.world.state,
-      this.world.area,
+      w.state,
+      w.area,
       picked.entityId,
       picked.choice.id,
     );
-    this.world = { ...this.world, state };
-    const speaker =
-      this.world.area.entities.find((e) => e.id === picked.entityId)?.name ?? "";
+    this.world = { ...w, state };
+    const speaker = w.area.entities.find((e) => e.id === picked.entityId)?.name ?? "";
     if (reply !== undefined) ui.showReply(speaker, reply);
     else ui.closePanel();
+    this.mirror({ type: "convoChoice", entityId: picked.entityId, choiceId: picked.choice.id });
   }
 
   private tryPortal(): void {
-    if (ui.panelState().mode !== "closed" || ui.veilOpen() || this.moving) return;
-    const portal = portalUnderPlayer(this.world.state, this.world.area);
+    const w = this.world;
+    if (!w || ui.panelState().mode !== "closed" || ui.veilOpen() || this.moving) return;
+    const portal = portalUnderPlayer(w.state, w.area);
     if (!portal) return;
-    const result = followTransition(
-      this.world,
-      portal.transition,
-      portal.label,
-    );
+
+    if (this.session.mode === "server") {
+      if (portal.transition.type === "generate") {
+        ui.showVeil(
+          "The story is being written.",
+          `You chose ${portal.label}. What lies beyond has never existed until now — it is being authored for you, out of everything you just did.`,
+          "",
+        );
+      }
+      void sendAction(this.session, { type: "portal", portalId: portal.id })
+        .then((result) => {
+          ui.hideVeil();
+          if (result.kind === "area") {
+            this.world = { area: result.area, state: result.state };
+            this.buildArea();
+            ui.showNarration(result.area.description);
+          } else if (result.kind === "threshold") {
+            ui.showVeil("A threshold.", result.summary, "esc · back");
+          }
+        })
+        .catch((err: unknown) => {
+          const message =
+            err instanceof ServerError
+              ? err.message
+              : "The world resisted being written just now — try again.";
+          ui.showVeil("The pen hesitates.", message, "esc · step back and try again");
+        });
+      return;
+    }
+
+    const result = followTransition(w, portal.transition, portal.label);
     if (result.kind === "moved") {
       this.world = result.world;
       this.buildArea();
-      ui.showNarration(this.world.area.description);
+      ui.showNarration(result.world.area.description);
     } else if (result.kind === "unwritten") {
       ui.showVeil(
         "Here, the story is unwritten.",
-        `You chose ${result.portalLabel}. Beyond this door, nothing exists yet — the AI Director writes it the moment you step through, shaped by everything you just did. (The Director arrives in the next build.)`,
+        `You chose ${result.portalLabel}. Beyond this door, nothing exists yet — the AI Director writes it the moment you step through, shaped by everything you just did. (Start the game server to continue past this point.)`,
         "esc · step back from the threshold",
       );
     } else {
@@ -156,6 +211,7 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private buildArea(): void {
+    if (!this.world) return;
     const area = this.world.area;
     this.mapLayer?.destroy();
     this.entityLayer?.destroy();
@@ -194,6 +250,7 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private redrawEntities(): void {
+    if (!this.world) return;
     this.entityLayer.removeAll(true);
     for (const entity of this.visibleEntities()) {
       const color = Phaser.Display.Color.HexStringToColor(entity.color ?? "#94b0c2").color;
@@ -218,7 +275,7 @@ export class PlayScene extends Phaser.Scene {
       this.entityLayer.add(rect);
       this.entityLayer.add(label);
     }
-    for (const portal of this.world.area.portals) {
+    for (const portal of this.world!.area.portals) {
       const marker = this.add
         .rectangle(
           portal.pos.x * TILE + TILE / 2,
@@ -233,17 +290,19 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private updateHud(): void {
+    const w = this.world;
+    if (!w) return;
     let prompt = "wasd / arrows · move";
     if (ui.veilOpen()) prompt = "";
     else if (ui.panelState().mode !== "closed") prompt = "";
     else {
-      const portal = portalUnderPlayer(this.world.state, this.world.area);
-      const target = reachableEntities(this.world.state, this.world.area)[0];
+      const portal = portalUnderPlayer(w.state, w.area);
+      const target = reachableEntities(w.state, w.area)[0];
       if (portal) prompt = `enter · ${portal.label}`;
       else if (target?.interaction) prompt = `e · ${target.interaction.verb} — ${target.name}`;
     }
-    const inv = this.world.state.inventory;
+    const inv = w.state.inventory;
     const invText = inv.length > 0 ? `   [${inv.map((i) => i.name).join(", ")}]` : "";
-    ui.setHud(`${this.world.area.name}${invText}`, prompt);
+    ui.setHud(`${w.area.name}${invText}`, prompt);
   }
 }

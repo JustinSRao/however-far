@@ -1,9 +1,11 @@
 import Fastify, { type FastifyInstance } from "fastify";
 import { createModelClient, type ModelClient } from "@unwritten/director";
 import { SessionManager } from "./sessionManager.js";
+import { WorldSessionManager } from "./worldSessionManager.js";
 import { registerSessionRoutes } from "./routes/sessions.js";
 import { registerLibraryRoutes } from "./routes/library.js";
 import { registerArtRoutes } from "./routes/art.js";
+import { registerWorldRoutes } from "./routes/world.js";
 
 export interface BuildServerOptions {
   /**
@@ -26,9 +28,15 @@ export function buildServer(opts: BuildServerOptions = {}): FastifyInstance {
     log: (msg) => app.log.info({ director: msg }),
   });
 
+  const worldSessions = new WorldSessionManager({
+    model,
+    log: (msg) => app.log.info({ director: msg }),
+  });
+
   registerSessionRoutes(app, sessions);
   registerLibraryRoutes(app);
   registerArtRoutes(app, sessions);
+  registerWorldRoutes(app, worldSessions);
 
   return app;
 }
