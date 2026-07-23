@@ -5,10 +5,12 @@ import { SpriteData, StoryPath, StyleBible, type AssetRecord } from "@howeverfar
 import {
   decodePng,
   encodePng,
+  isBlank,
   parseColorMapping,
   processArt,
   recolor,
   renderSpriteData,
+  sliceSheet,
   upscale,
   type RawImage,
 } from "@howeverfar/art";
@@ -133,6 +135,8 @@ usage:
   asset-studio variant   <name-or-id>   --name <new-slug> [--map "#from=#to,..."]
                                         [--style <bible.json>] [--path <p>] [--tags a,b]
                                         [--replace] [--db <dir>] [--json]
+  asset-studio slice     <sheet.png...> --cell <n|WxH> --out <dir> [--spacing <n>]
+                                        [--margin <n>] [--keep-blank] [--json]
   asset-studio credits   [--db <dir>] [--json]`);
   process.exit(2);
 }
@@ -416,6 +420,52 @@ async function cmdPreview(cli: Cli, json: boolean): Promise<never> {
 }
 
 /**
+ * Cut a spritesheet into numbered cell PNGs. Most free packs ship one packed
+ * sheet rather than loose files, so this is the front door for ingestion:
+ * slice, look at the cells, then `import` the ones worth keeping with real
+ * names. Blank cells are skipped unless --keep-blank.
+ */
+async function cmdSlice(cli: Cli, json: boolean): Promise<never> {
+  const out = stringFlag(cli.flags, "out");
+  if (!out) usage("--out <dir> is required");
+  const cellRaw = stringFlag(cli.flags, "cell");
+  if (!cellRaw) usage('--cell <n> or --cell <w>x<h> is required (the sheet\'s cell size)');
+  const [wRaw, hRaw] = cellRaw.split("x");
+  const cellWidth = Number(wRaw);
+  const cellHeight = hRaw === undefined ? cellWidth : Number(hRaw);
+  if (!Number.isInteger(cellWidth) || !Number.isInteger(cellHeight)) {
+    usage(`--cell must be integers, got "${cellRaw}"`);
+  }
+  const spacing = Number(stringFlag(cli.flags, "spacing") ?? 0);
+  const margin = Number(stringFlag(cli.flags, "margin") ?? 0);
+  const keepBlank = cli.flags.get("keep-blank") === true;
+
+  await mkdir(out, { recursive: true });
+  const reports: FileReport[] = [];
+  for (const file of cli.files) {
+    const cells = sliceSheet(await readImage(file), {
+      cellWidth,
+      cellHeight,
+      spacing,
+      margin,
+    });
+    let written = 0;
+    for (const cell of cells) {
+      if (!keepBlank && isBlank(cell.image)) continue;
+      const name = `${basename(file).replace(/\.png$/i, "")}_${String(cell.index).padStart(4, "0")}.png`;
+      await writeFile(join(out, name), encodePng(cell.image));
+      written++;
+    }
+    reports.push({
+      file: `${file} -> ${written}/${cells.length} cell(s)`,
+      findings: [],
+      outFile: out,
+    });
+  }
+  return report(reports, json);
+}
+
+/**
  * Recolor/restyle an asset already in the database into a new catalog entry
  * (ADR-0011: "recolor/recombine variants"). The original's `source` carries
  * over and `derivedFrom` records the parent, so one curated CC0 pack yields
@@ -573,7 +623,7 @@ async function cmdGenerate(cli: Cli, json: boolean): Promise<never> {
 async function main(): Promise<void> {
   const cli = parseArgs(process.argv.slice(2));
   const json = cli.flags.get("json") === true;
-  const needsFiles = ["validate", "normalize", "import", "sprite", "variant"];
+  const needsFiles = ["validate", "normalize", "import", "sprite", "variant", "slice"];
   if (needsFiles.includes(cli.command) && cli.files.length === 0) usage("no input files");
 
   switch (cli.command) {
@@ -591,6 +641,8 @@ async function main(): Promise<void> {
       return await cmdPreview(cli, json);
     case "generate":
       return await cmdGenerate(cli, json);
+    case "slice":
+      return await cmdSlice(cli, json);
     case "variant":
       return await cmdVariant(cli, json);
     case "credits":

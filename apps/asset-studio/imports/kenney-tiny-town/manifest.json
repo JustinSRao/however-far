@@ -1,0 +1,230 @@
+{
+  "pack": "Tiny Town",
+  "author": "Kenney",
+  "url": "https://kenney.nl/assets/tiny-town",
+  "license": "CC0-1.0",
+  "path": "her",
+  "styleFile": "her-world.draft.json",
+  "assets": [
+    {
+      "file": "grass.png",
+      "name": "grass",
+      "kind": "tile",
+      "tags": [
+        "ground",
+        "grass"
+      ],
+      "sourceIndex": 0,
+      "sourceFile": "tile_0000.png"
+    },
+    {
+      "file": "grass-flowers.png",
+      "name": "grass-flowers",
+      "kind": "tile",
+      "tags": [
+        "ground",
+        "grass"
+      ],
+      "sourceIndex": 2,
+      "sourceFile": "tile_0002.png"
+    },
+    {
+      "file": "dirt.png",
+      "name": "dirt",
+      "kind": "tile",
+      "tags": [
+        "ground",
+        "path"
+      ],
+      "sourceIndex": 25,
+      "sourceFile": "tile_0025.png"
+    },
+    {
+      "file": "grass-stones.png",
+      "name": "grass-stones",
+      "kind": "tile",
+      "tags": [
+        "ground",
+        "grass"
+      ],
+      "sourceIndex": 43,
+      "sourceFile": "tile_0043.png"
+    },
+    {
+      "file": "stone-floor.png",
+      "name": "stone-floor",
+      "kind": "tile",
+      "tags": [
+        "ground",
+        "interior"
+      ],
+      "sourceIndex": 121,
+      "sourceFile": "tile_0121.png"
+    },
+    {
+      "file": "castle-wall.png",
+      "name": "castle-wall",
+      "kind": "tile",
+      "tags": [
+        "wall",
+        "castle"
+      ],
+      "sourceIndex": 96,
+      "sourceFile": "tile_0096.png"
+    },
+    {
+      "file": "stone-wall.png",
+      "name": "stone-wall",
+      "kind": "tile",
+      "tags": [
+        "wall",
+        "stone"
+      ],
+      "sourceIndex": 76,
+      "sourceFile": "tile_0076.png"
+    },
+    {
+      "file": "timber-wall.png",
+      "name": "timber-wall",
+      "kind": "tile",
+      "tags": [
+        "wall",
+        "wood"
+      ],
+      "sourceIndex": 72,
+      "sourceFile": "tile_0072.png"
+    },
+    {
+      "file": "roof-red.png",
+      "name": "roof-red",
+      "kind": "tile",
+      "tags": [
+        "roof",
+        "building"
+      ],
+      "sourceIndex": 52,
+      "sourceFile": "tile_0052.png"
+    },
+    {
+      "file": "roof-slate.png",
+      "name": "roof-slate",
+      "kind": "tile",
+      "tags": [
+        "roof",
+        "building"
+      ],
+      "sourceIndex": 48,
+      "sourceFile": "tile_0048.png"
+    },
+    {
+      "file": "tree-conifer.png",
+      "name": "tree-conifer",
+      "kind": "tile",
+      "tags": [
+        "tree",
+        "nature"
+      ],
+      "sourceIndex": 4,
+      "sourceFile": "tile_0004.png"
+    },
+    {
+      "file": "tree-autumn.png",
+      "name": "tree-autumn",
+      "kind": "tile",
+      "tags": [
+        "tree",
+        "nature"
+      ],
+      "sourceIndex": 3,
+      "sourceFile": "tile_0003.png"
+    },
+    {
+      "file": "tree-round.png",
+      "name": "tree-round",
+      "kind": "tile",
+      "tags": [
+        "tree",
+        "nature"
+      ],
+      "sourceIndex": 5,
+      "sourceFile": "tile_0005.png"
+    },
+    {
+      "file": "fence-wood.png",
+      "name": "fence-wood",
+      "kind": "tile",
+      "tags": [
+        "fence",
+        "boundary"
+      ],
+      "sourceIndex": 44,
+      "sourceFile": "tile_0044.png"
+    },
+    {
+      "file": "mushrooms.png",
+      "name": "mushrooms",
+      "kind": "tile",
+      "tags": [
+        "nature",
+        "detail"
+      ],
+      "sourceIndex": 29,
+      "sourceFile": "tile_0029.png"
+    },
+    {
+      "file": "key.png",
+      "name": "key",
+      "kind": "item",
+      "tags": [
+        "quest",
+        "pickup"
+      ],
+      "sourceIndex": 117,
+      "sourceFile": "tile_0117.png"
+    },
+    {
+      "file": "bow.png",
+      "name": "bow",
+      "kind": "item",
+      "tags": [
+        "weapon",
+        "pickup"
+      ],
+      "sourceIndex": 118,
+      "sourceFile": "tile_0118.png"
+    },
+    {
+      "file": "pickaxe.png",
+      "name": "pickaxe",
+      "kind": "item",
+      "tags": [
+        "tool",
+        "pickup"
+      ],
+      "sourceIndex": 115,
+      "sourceFile": "tile_0115.png"
+    },
+    {
+      "file": "chest.png",
+      "name": "chest",
+      "kind": "item",
+      "tags": [
+        "container",
+        "pickup"
+      ],
+      "sourceIndex": 106,
+      "sourceFile": "tile_0106.png"
+    },
+    {
+      "file": "coin.png",
+      "name": "coin",
+      "kind": "item",
+      "tags": [
+        "currency",
+        "pickup"
+      ],
+      "sourceIndex": 93,
+      "sourceFile": "tile_0093.png"
+    }
+  ]
+}

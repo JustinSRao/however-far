@@ -1,0 +1,87 @@
+{
+  "pack": "RPG Urban Pack",
+  "author": "Kenney",
+  "url": "https://kenney.nl/assets/rpg-urban-pack",
+  "license": "CC0-1.0",
+  "path": "his",
+  "styleFile": "his-world.draft.json",
+  "assets": [
+    {
+      "file": "paving-tan.png",
+      "name": "paving-tan",
+      "kind": "tile",
+      "tags": [
+        "ground",
+        "sidewalk"
+      ],
+      "sourceIndex": 109,
+      "sourceFile": "tile_0109.png"
+    },
+    {
+      "file": "paving-grey.png",
+      "name": "paving-grey",
+      "kind": "tile",
+      "tags": [
+        "ground",
+        "sidewalk"
+      ],
+      "sourceIndex": 118,
+      "sourceFile": "tile_0118.png"
+    },
+    {
+      "file": "brick-wall-orange.png",
+      "name": "brick-wall-orange",
+      "kind": "tile",
+      "tags": [
+        "wall",
+        "building"
+      ],
+      "sourceIndex": 126,
+      "sourceFile": "tile_0126.png"
+    },
+    {
+      "file": "concrete-wall.png",
+      "name": "concrete-wall",
+      "kind": "tile",
+      "tags": [
+        "wall",
+        "building"
+      ],
+      "sourceIndex": 9,
+      "sourceFile": "tile_0009.png"
+    },
+    {
+      "file": "brick-wall-red.png",
+      "name": "brick-wall-red",
+      "kind": "tile",
+      "tags": [
+        "wall",
+        "building"
+      ],
+      "sourceIndex": 18,
+      "sourceFile": "tile_0018.png"
+    },
+    {
+      "file": "roof-tiled.png",
+      "name": "roof-tiled",
+      "kind": "tile",
+      "tags": [
+        "roof",
+        "building"
+      ],
+      "sourceIndex": 6,
+      "sourceFile": "tile_0006.png"
+    },
+    {
+      "file": "townsperson.png",
+      "name": "townsperson",
+      "kind": "sprite",
+      "tags": [
+        "npc",
+        "character"
+      ],
+      "sourceIndex": 23,
+      "sourceFile": "tile_0023.png"
+    }
+  ]
+}

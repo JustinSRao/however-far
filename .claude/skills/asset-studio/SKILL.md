@@ -20,7 +20,9 @@ You are the operator. The flow:
    empty, etc.
 2. **Pick the cheapest adequate source:**
    - Tiles, props, base characters → **CC0 library** first (recolor/recombine existing
-     catalog entries before importing new packs).
+     catalog entries before importing new packs). **CC0 only** — owner directive. Read
+     the pack's bundled `License.txt` before ingesting anything; a page saying "free"
+     is not a license. Anything share-alike or attribution-required is out of scope.
    - Small bespoke sprites/icons → **sprite-as-data** (emit a palette-indexed grid
      yourself — you are a capable pixel artist at 16–32px when working in indexed
      palette JSON).
@@ -41,6 +43,7 @@ Every one takes `--json` and exits 0 pass / 1 findings / 2 usage.
 | Command | What it does |
 |---|---|
 | `validate <png...> --style --kind [--frames]` | Check gate-readiness; `--frames` validates one animation as a set |
+| `slice <sheet.png...> --cell <n\|WxH> --out` | Cut a packed spritesheet into cells (`--spacing`, `--margin`); how most free packs ship |
 | `normalize <png...> --style --out` | Run `processArt` only, write the gated PNGs |
 | `import <png...> --style --kind --path --source` | Normalize + validate + land in the database. `--frames` makes the inputs one animation (`--frame-ms`) |
 | `sprite <spec.json...> --style --kind --path [--import]` | Render sprite-as-data grids through the gate |
@@ -96,3 +99,12 @@ Per-path, authored at development time, locked (her fantasy world / his real wor
 All validation is against the target path's bible: palette ≤ 32 colors, grid size,
 outline rule. If an asset should exist in both worlds, it is two catalog entries, one
 per bible.
+
+**`keywords` is the world's constant visual identity, not its mood.** Every generated
+image gets the whole keyword list, so a keyword pins that trait on *all* art forever.
+Per-asset feeling belongs in `ArtRequest.mood`, which the prompt carries separately.
+This matters because neither path sits at one emotional end: STORY.md's tone
+discipline is "Path A may get dark, but it is an adventure; Path B may have warmth,
+but it is a drama." A bible that says "storybook" or "melancholy" quietly overrides
+that for every asset — which is exactly the drift that had to be corrected once
+already. Keep bibles to setting, palette register, rendering style; let mood swing.

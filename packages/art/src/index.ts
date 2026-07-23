@@ -8,3 +8,4 @@ export * from "./cache.js";
 export * from "./sprite.js";
 export * from "./chroma.js";
 export * from "./recolor.js";
+export * from "./slice.js";

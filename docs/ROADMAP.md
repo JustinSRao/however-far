@@ -96,11 +96,15 @@ Goal: a large, coherent, growing pixel-art database, operable by agents (ADR-001
       catalog (kind, tags, path/style, size, source, license, `derivedFrom`). Blobs
       dedup by hash; catalog records are keyed by logical identity, so the same pixels
       can be two entries (one asset in both worlds) without one destroying the other
-- [~] CC0 ingestion: **tooling done** — `import --source cc0` refuses without
-      pack/author/url, `variant` recolors and restyles (attribution chains via
-      `derivedFrom`), `credits` renders the shipping notice from the catalog.
-      *Remaining: actually curating Kenney/OpenGameArt packs — an art-direction call
-      for the owner, not something to pick unilaterally*
+- [x] CC0 ingestion: `import --source cc0` refuses without pack/author/url, `slice`
+      cuts packed spritesheets (how most packs ship), `variant` recolors and restyles
+      with attribution chaining via `derivedFrom`, `credits` renders the shipping
+      notice from the catalog. **27 CC0 assets curated and committed** from Kenney's
+      Tiny Town (her world) and RPG Urban Pack (his world) — owner directive: CC0
+      only, and every pack's bundled License.txt was read before ingesting. Raw pack
+      files live in `apps/asset-studio/imports/<pack>/raw/` with a `manifest.json`
+      carrying attribution; `npm run seed` re-gates them, so the database stays a
+      derived artifact and the outline is never applied twice
 - [x] Sprite-as-data: `SpriteData` schema (palette-indexed rows, `.` transparent,
       base-32 indices), deterministic `renderSpriteData`, validated like any other
       asset. Committed specs in `apps/asset-studio/sprites/`, `npm run seed` rebuilds
@@ -115,6 +119,13 @@ Goal: a large, coherent, growing pixel-art database, operable by agents (ADR-001
 - [x] Animation support: frame-sequence assets validated as a set (`validateFrameSet`,
       `validate --frames`, `import --frames --frame-ms`), stored as ordered frame
       hashes on one catalog record
+
+**Open for the owner (art direction, not engineering):** the draft palettes fight the
+tone. Sweetie-16 (her world) has no brown, so Kenney's earth and timber quantize to
+bright orange, and its greens land on lime — a cheerful register, when STORY.md says
+Path A "may get dark". His world's palette casts concrete lavender. Locking real
+per-path palettes is a recorded decision (ADR-0011) and wants the owner's eye; the
+gate re-runs over every committed source, so a palette swap is one `npm run seed`.
 
 ## Phase 6 — The living RPG
 

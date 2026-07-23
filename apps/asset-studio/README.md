@@ -148,13 +148,32 @@ pixel, indexing the palette). `npm run seed -w @howeverfar/asset-studio` rebuild
 the database from those files, so the database is always regenerable and the art
 is reviewable in a diff.
 
-There are three tiles in there today — sidewalk, street, and hedge for the
-prologue's real world. They are starter art against draft palettes; replace them
-freely once the look is decided.
+Free art from other people lives in `imports/<pack>/`: a `manifest.json` with the
+pack's attribution, and a `raw/` folder holding the **original** files under
+meaningful names. Raw on purpose — the seed re-runs the gate every time, and
+storing already-gated PNGs would draw a second outline around art that already
+has one.
+
+There are 30 assets in there today: three tiles I wrote by hand for the
+prologue's real world, plus 27 from two Kenney packs — Tiny Town for the fantasy
+world, RPG Urban Pack for the real one. **Everything is CC0**, and each pack's
+bundled `License.txt` was read before it was ingested. Run `credits` to see the
+attribution list the game will ship.
+
+All of it is starter art against draft palettes; replace it freely once the look
+is decided. Because every source is committed and re-gated on seed, changing a
+palette is one `npm run seed` away from re-styling the whole database.
+
+## A note on the draft palettes
+
+Worth your eye before locking anything: the fantasy palette (Sweetie-16) has no
+brown, so imported earth and timber quantize to bright orange, and its greens
+land on lime. That reads cheerful, which fights the story's own note that her
+path *may get dark*. The real world's palette gives concrete a lavender cast.
+Neither is a bug — the gate is doing exactly what it should — but the palettes
+themselves are the next art-direction decision.
 
 ## Still to come
 
-Curated CC0 packs (the tooling and the license bookkeeping are done — choosing
-which packs match the game's look is an art-direction call), and binding catalog
-entries to the tiles and characters the game renders, which lands with the
-rendering work in Phase 6.
+Binding catalog entries to the tiles and characters the game actually renders,
+which lands with the rendering work in Phase 6.
