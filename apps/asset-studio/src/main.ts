@@ -1,20 +1,25 @@
 import { readFile, writeFile, mkdir } from "node:fs/promises";
-import { basename, join } from "node:path";
+import { basename, dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { SpriteData, StoryPath, StyleBible, type AssetRecord } from "@howeverfar/schema";
 import {
   decodePng,
   encodePng,
+  parseColorMapping,
   processArt,
+  recolor,
   renderSpriteData,
   upscale,
   type RawImage,
 } from "@howeverfar/art";
 import {
   assetDbRoot,
+  attributions,
   getAssetRecord,
   listAssets,
   putAsset,
   readBlob,
+  renderCredits,
   type AssetQuery,
 } from "@howeverfar/library";
 import { ArtRequest } from "@howeverfar/schema";
@@ -50,6 +55,8 @@ import { parseSource, parseTags, slugifyName, stringFlag, type Flags } from "./c
  * `catalog` queries the database; `preview` writes human-viewable upscaled
  * PNGs. Exit 0 = pass, 1 = findings with errors, 2 = usage/IO problem.
  */
+
+const STYLES_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "styles");
 
 interface Cli {
   command: string;
@@ -122,7 +129,11 @@ usage:
   asset-studio generate  --subject "..." --mood "..." --style <bible.json> --kind <kind>
                                         --path <p> [--size small|medium|large] [--name <slug>]
                                         [--tags a,b] [--import] [--out <dir>] [--yes]
-                                        [--db <dir>] [--json]     (COSTS MONEY — needs --yes)`);
+                                        [--db <dir>] [--json]     (COSTS MONEY — needs --yes)
+  asset-studio variant   <name-or-id>   --name <new-slug> [--map "#from=#to,..."]
+                                        [--style <bible.json>] [--path <p>] [--tags a,b]
+                                        [--replace] [--db <dir>] [--json]
+  asset-studio credits   [--db <dir>] [--json]`);
   process.exit(2);
 }
 
@@ -405,6 +416,97 @@ async function cmdPreview(cli: Cli, json: boolean): Promise<never> {
 }
 
 /**
+ * Recolor/restyle an asset already in the database into a new catalog entry
+ * (ADR-0011: "recolor/recombine variants"). The original's `source` carries
+ * over and `derivedFrom` records the parent, so one curated CC0 pack yields
+ * many assets without losing anybody's attribution. The output re-enters
+ * through the gate like anything else.
+ */
+async function cmdVariant(cli: Cli, json: boolean): Promise<never> {
+  const db = dbRoot(cli.flags);
+  const ref = cli.files[0];
+  if (!ref || cli.files.length > 1) usage("variant takes exactly one asset name or id");
+  const name = stringFlag(cli.flags, "name");
+  if (!name) usage("--name <slug> is required for the new variant");
+
+  const matches = listAssets({ name: ref }, db);
+  if (matches.length > 1) usage(`"${ref}" matches ${matches.length} assets — use the id`);
+  const parent = matches[0] ?? getAssetRecord(ref, db);
+
+  // Restyling to another world re-gates against that bible; otherwise the
+  // asset stays in its own world and only its colors move.
+  const styleFlag = stringFlag(cli.flags, "style");
+  const style = styleFlag
+    ? StyleBible.parse(JSON.parse(await readFile(styleFlag, "utf8")))
+    : undefined;
+  const path = stringFlag(cli.flags, "path") ? parsePath(cli.flags) : parent.path;
+  if (!style && path !== parent.path) {
+    usage("--path to another world needs that world's --style bible");
+  }
+  const targetStyle = style ?? (await loadStyleFor(parent, cli.flags));
+  const mapSpec = stringFlag(cli.flags, "map");
+  const mapping = mapSpec ? parseColorMapping(mapSpec) : undefined;
+  if (!mapping && !style) usage("variant needs --map <#from=#to,...> and/or --style <bible.json>");
+
+  const frames: Uint8Array[] = [];
+  const findings: Finding[] = [];
+  for (const [i, hash] of parent.frames.entries()) {
+    const source = decodePng(readBlob(hash, db));
+    const recolored = mapping ? recolor(source, mapping) : source;
+    const gated = processArt(recolored, targetStyle);
+    for (const f of validateAsset(gated, targetStyle, parent.kind)) {
+      findings.push(
+        parent.frames.length > 1 ? { ...f, message: `frame ${i}: ${f.message}` } : f,
+      );
+    }
+    frames.push(encodePng(gated));
+  }
+
+  const entry: FileReport = { file: `${parent.name} -> ${name} (${path})`, findings };
+  const stored: AssetRecord[] = [];
+  if (!findings.some((f) => f.level === "error")) {
+    const { record } = putAsset(
+      {
+        name,
+        kind: parent.kind,
+        path,
+        styleName: targetStyle.paletteName,
+        tags: parseTags(cli.flags).length > 0 ? parseTags(cli.flags) : parent.tags,
+        frames,
+        ...(parent.frameMs !== undefined ? { frameMs: parent.frameMs } : {}),
+        source: parent.source, // attribution chains, never gets overwritten
+        derivedFrom: parent.id,
+        replace: cli.flags.get("replace") === true,
+      },
+      db,
+    );
+    stored.push(record);
+    entry.assetId = record.id;
+  }
+  return report([entry], json, { stored });
+}
+
+/** The style bible a variant keeps when it isn't being restyled. */
+async function loadStyleFor(parent: AssetRecord, flags: Flags): Promise<StyleBible> {
+  const explicit = stringFlag(flags, "style");
+  if (explicit) return StyleBible.parse(JSON.parse(await readFile(explicit, "utf8")));
+  const guess = join(STYLES_DIR, `${parent.path}-world.draft.json`);
+  try {
+    return StyleBible.parse(JSON.parse(await readFile(guess, "utf8")));
+  } catch {
+    usage(`could not infer the style bible for "${parent.name}" — pass --style <bible.json>`);
+  }
+}
+
+/** The CREDITS the game ships: every licensed source in the catalog, deduped. */
+function cmdCredits(cli: Cli, json: boolean): never {
+  const entries = attributions(dbRoot(cli.flags));
+  if (json) console.log(JSON.stringify({ ok: true, attributions: entries }, null, 2));
+  else process.stdout.write(renderCredits(entries));
+  process.exit(0);
+}
+
+/**
  * gpt-image-2 generation (ADR-0011 source #3). This is the one command that
  * spends the owner's OpenAI budget, so it refuses to run without --yes and
  * prints what it will cost the ledger. Everything downstream is the same
@@ -471,7 +573,7 @@ async function cmdGenerate(cli: Cli, json: boolean): Promise<never> {
 async function main(): Promise<void> {
   const cli = parseArgs(process.argv.slice(2));
   const json = cli.flags.get("json") === true;
-  const needsFiles = ["validate", "normalize", "import", "sprite"];
+  const needsFiles = ["validate", "normalize", "import", "sprite", "variant"];
   if (needsFiles.includes(cli.command) && cli.files.length === 0) usage("no input files");
 
   switch (cli.command) {
@@ -489,6 +591,10 @@ async function main(): Promise<void> {
       return await cmdPreview(cli, json);
     case "generate":
       return await cmdGenerate(cli, json);
+    case "variant":
+      return await cmdVariant(cli, json);
+    case "credits":
+      return cmdCredits(cli, json);
     default:
       usage(`unknown command "${cli.command}"`);
   }

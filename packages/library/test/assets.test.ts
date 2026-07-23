@@ -5,12 +5,14 @@ import { join } from "node:path";
 import { SpriteData } from "@howeverfar/schema";
 import { encodePng, renderSpriteData } from "@howeverfar/art";
 import {
+  attributions,
   DuplicateAssetError,
   getAssetRecord,
   listAssets,
   putAsset,
   putBlob,
   readBlob,
+  renderCredits,
   sha256OfBytes,
 } from "../src/index.js";
 
@@ -99,6 +101,39 @@ describe("putAsset + catalog", () => {
     expect(listAssets({ name: "bell-item" }, db)).toHaveLength(1);
   });
 
+  it("keeps identical pixels as separate records under different identities", () => {
+    // Blobs dedup by content; catalog entries must not, or the second put
+    // would silently destroy the first.
+    const shared = png(0);
+    const a = putAsset(
+      {
+        name: "twin-a",
+        kind: "sprite",
+        path: "her",
+        styleName: "her-world-draft",
+        tags: [],
+        frames: [shared],
+        source,
+      },
+      db,
+    ).record;
+    const b = putAsset(
+      {
+        name: "twin-b",
+        kind: "sprite",
+        path: "her",
+        styleName: "her-world-draft",
+        tags: [],
+        frames: [shared],
+        source,
+      },
+      db,
+    ).record;
+    expect(a.id).toBe(b.id); // same content
+    expect(listAssets({ name: "twin-a" }, db)).toHaveLength(1);
+    expect(listAssets({ name: "twin-b" }, db)).toHaveLength(1);
+  });
+
   it("allows the same name for a different path (two worlds, two entries)", () => {
     putAsset(
       {
@@ -113,6 +148,42 @@ describe("putAsset + catalog", () => {
       db,
     );
     expect(listAssets({ name: "bell-item" }, db)).toHaveLength(2);
+  });
+
+  it("records provenance for a derived variant", () => {
+    const parent = putAsset(
+      {
+        name: "kenney-tile",
+        kind: "tile",
+        path: "her",
+        styleName: "her-world-draft",
+        tags: ["ground"],
+        frames: [png(0)],
+        source: {
+          type: "cc0",
+          pack: "Tiny Town",
+          author: "Kenney",
+          url: "https://kenney.nl/assets/tiny-town",
+          license: "CC0-1.0",
+        },
+      },
+      db,
+    ).record;
+    const variant = putAsset(
+      {
+        name: "kenney-tile-blue",
+        kind: "tile",
+        path: "her",
+        styleName: "her-world-draft",
+        tags: ["ground"],
+        frames: [png(1)],
+        source: parent.source, // attribution carries over, never overwritten
+        derivedFrom: parent.id,
+      },
+      db,
+    ).record;
+    expect(variant.derivedFrom).toBe(parent.id);
+    expect(variant.source).toEqual(parent.source);
   });
 
   it("stores animations as ordered frame hashes", () => {
@@ -133,5 +204,26 @@ describe("putAsset + catalog", () => {
     expect(record.frames).toEqual(frames.map((f) => sha256OfBytes(f)));
     expect(record.frameMs).toBe(140);
     expect(record.id).toBe(record.frames[0]);
+  });
+});
+
+describe("attributions", () => {
+  it("groups licensed sources and covers derived variants", () => {
+    const entries = attributions(db);
+    expect(entries).toHaveLength(1);
+    expect(entries[0]?.author).toBe("Kenney");
+    // The recolored variant inherited the source, so it credits Kenney too.
+    expect(entries[0]?.assets).toEqual(["kenney-tile", "kenney-tile-blue"]);
+  });
+
+  it("renders credits text naming pack, author, license and url", () => {
+    const text = renderCredits(attributions(db));
+    expect(text).toContain("Tiny Town — Kenney");
+    expect(text).toContain("CC0-1.0");
+    expect(text).toContain("https://kenney.nl/assets/tiny-town");
+  });
+
+  it("says so plainly when nothing third-party is stored", () => {
+    expect(renderCredits([])).toMatch(/No third-party assets/);
   });
 });

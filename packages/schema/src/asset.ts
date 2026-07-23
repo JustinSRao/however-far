@@ -65,6 +65,13 @@ export const AssetRecord = z.object({
   /** Playback speed for multi-frame assets. */
   frameMs: z.number().int().min(20).max(2000).optional(),
   source: AssetSource,
+  /**
+   * The asset this one was recolored/restyled from. The `source` is carried
+   * over unchanged rather than replaced: a recolored Kenney tile is still
+   * Kenney's CC0 work and must keep its attribution, so provenance chains
+   * instead of being overwritten.
+   */
+  derivedFrom: AssetHash.optional(),
   createdAt: z.string().datetime(),
 });
 export type AssetRecord = z.infer<typeof AssetRecord>;

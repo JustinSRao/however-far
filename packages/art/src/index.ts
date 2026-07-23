@@ -7,3 +7,4 @@ export * from "./pipeline.js";
 export * from "./cache.js";
 export * from "./sprite.js";
 export * from "./chroma.js";
+export * from "./recolor.js";

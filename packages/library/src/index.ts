@@ -22,13 +22,16 @@ export {
 } from "./bundle.js";
 export {
   assetDbRoot,
+  attributions,
   DuplicateAssetError,
   getAssetRecord,
   listAssets,
   putAsset,
   putBlob,
   readBlob,
+  renderCredits,
   sha256OfBytes,
   type AssetQuery,
+  type AttributionEntry,
   type PutAssetInput,
 } from "./assets.js";
