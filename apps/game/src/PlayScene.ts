@@ -425,12 +425,23 @@ export class PlayScene extends Phaser.Scene {
         // on screen, but the door must not open onto a blank pause.
         this.showStage(portal.transition.type === "ending" ? "closing" : "writing", seed);
       }
-      void streamAction(
-        this.session,
-        { type: "portal", portalId: portal.id },
-        { onStage: (stage) => this.showStage(stage, seed) },
-      )
-        .then((result) => {
+      const session = this.session;
+      const portalId = portal.id;
+      // Movement is applied locally in server mode, so the server still thinks
+      // we are standing on the area's spawn. A portal's legality depends on
+      // where we ACTUALLY are, so tell the server first — and await it, so the
+      // sync cannot race the portal request (which bypasses mirror()). Without
+      // this, every door away from spawn refuses with "not standing on portal".
+      const pos = { ...w.state.pos };
+      void (async () => {
+        try {
+          await sendAction(session, { type: "moveTo", pos });
+          this.syncedPos = pos;
+          const result = await streamAction(
+            session,
+            { type: "portal", portalId },
+            { onStage: (stage) => this.showStage(stage, seed) },
+          );
           ui.hideVeil();
           if (result.kind === "area") {
             this.world = { area: result.area, state: result.state };
@@ -439,14 +450,14 @@ export class PlayScene extends Phaser.Scene {
           } else if (result.kind === "threshold") {
             this.reachedThreshold(result.summary, result.ending);
           }
-        })
-        .catch((err: unknown) => {
+        } catch (err: unknown) {
           const message =
             err instanceof ServerError
               ? err.message
               : "The world resisted being written just now — try again.";
           ui.showVeil("The pen hesitates.", message, "esc · step back and try again");
-        });
+        }
+      })();
       return;
     }
 
