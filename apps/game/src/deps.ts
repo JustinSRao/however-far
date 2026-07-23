@@ -4,18 +4,21 @@
  */
 export {
   applyConvoChoice,
+  areaWithPartner,
   choiceAffordable,
   enterArea,
   initialAreaState,
   interactionUsed,
   portalUnderPlayer,
   reachableEntities,
+  reunionMove,
   runInteraction,
   tryMove,
   type CheckResult,
   type Direction,
   type InteractionOutcome,
 } from "@howeverfar/engine";
+export { projectPlayer } from "@howeverfar/schema";
 export {
   getPrologueArea,
   getPrologueAreas,

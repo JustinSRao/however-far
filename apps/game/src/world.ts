@@ -61,6 +61,26 @@ export interface SaveInfo {
   label?: string;
 }
 
+/** A shared world in progress on this server (Phase 7). */
+export interface ReunionInfo {
+  id: string;
+  phase: "reunion" | "ended";
+  updatedAt: string;
+  her: string;
+  his: string;
+  areasVisited: number;
+}
+
+export async function listReunions(): Promise<ReunionInfo[]> {
+  try {
+    const res = await fetch("/api/reunions");
+    if (!res.ok) return [];
+    return (await res.json()) as ReunionInfo[];
+  } catch {
+    return [];
+  }
+}
+
 /** Saved sessions on the server (newest first); empty when unreachable. */
 export async function listSaves(): Promise<SaveInfo[]> {
   try {

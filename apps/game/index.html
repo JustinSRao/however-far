@@ -156,6 +156,48 @@
         color: var(--accent);
         margin-right: 10px;
       }
+      /* The Call — the only form in the game, so it dresses like the game. */
+      #veil .inner.call { max-width: 620px; }
+      .call-form { display: flex; flex-direction: column; gap: 12px; text-align: left; }
+      .call-form .field { display: flex; flex-direction: column; gap: 4px; }
+      .call-form .field span {
+        font-family: ui-monospace, Consolas, monospace;
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--dim);
+      }
+      .call-form .field small {
+        font-family: ui-monospace, Consolas, monospace;
+        font-size: 11px;
+        color: var(--dim);
+        line-height: 1.5;
+      }
+      .call-form input {
+        background: color-mix(in srgb, var(--panel) 92%, transparent);
+        border: 1px solid var(--edge);
+        border-radius: 4px;
+        padding: 8px 10px;
+        color: var(--text);
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 15px;
+        outline: none;
+      }
+      .call-form input:focus { border-color: var(--accent); }
+      .call-form .key-field { margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--edge); }
+      .call-actions { display: flex; gap: 12px; margin-top: 6px; }
+      .call-actions button {
+        background: transparent;
+        border: 1px solid var(--accent);
+        color: var(--accent);
+        border-radius: 4px;
+        padding: 8px 18px;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 15px;
+        cursor: pointer;
+      }
+      .call-actions button.quiet { border-color: var(--edge); color: var(--dim); }
+      .call-actions button:hover { border-color: var(--text); color: var(--text); }
       #say {
         position: absolute;
         left: 12px;

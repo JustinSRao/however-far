@@ -1,6 +1,14 @@
 import Phaser from "phaser";
 import type { AreaSpec, PlacedEntity } from "@howeverfar/schema";
-import type { TurnStage } from "@howeverfar/schema";
+import type {
+  AreaGameState,
+  ReunionEnding,
+  ReunionGameState,
+  ReunionRole,
+  SoloPath,
+  ThresholdEnding,
+  TurnStage,
+} from "@howeverfar/schema";
 import {
   applyConvoChoice,
   choiceAffordable,
@@ -8,14 +16,19 @@ import {
   interstitialFor,
   interstitialStart,
   portalUnderPlayer,
+  projectPlayer,
   reachableEntities,
+  reunionMove,
   runInteraction,
   tryMove,
   type Direction,
 } from "./deps.js";
+import { fetchExport, placeCall, pollCall, showCall, type CallDraft } from "./call.js";
+import { ReunionClient } from "./reunionClient.js";
 import {
   connect,
   followTransition,
+  listReunions,
   listSaves,
   sendAction,
   ServerError,
@@ -58,6 +71,14 @@ export class PlayScene extends Phaser.Scene {
   private entityLayer!: Phaser.GameObjects.Container;
   private moving = false;
   private menu: readonly { key: string; label: string; action: () => void }[] | undefined;
+  /**
+   * The shared world, once two calls have answered each other (Phase 7). When
+   * this is set, `world.state` is a projection of `reunion.state` for this
+   * player and every rule still runs through the same engine.
+   */
+  private reunion:
+    | { client: ReunionClient; role: ReunionRole; state: ReunionGameState }
+    | undefined;
   /** `${areaId}/${portalId}` already announced, so each door is asked for once. */
   private announced = new Set<string>();
   private keys!: Record<"W" | "A" | "S" | "D" | "UP" | "LEFT" | "DOWN" | "RIGHT", Phaser.Input.Keyboard.Key>;
@@ -101,23 +122,36 @@ export class PlayScene extends Phaser.Scene {
 
   /** Boot: offer saved sessions when the server has any, else start fresh. */
   private async boot(): Promise<void> {
-    const saves = await listSaves();
-    if (saves.length === 0) {
+    const [saves, reunions] = await Promise.all([listSaves(), listReunions()]);
+    const open = reunions.filter((r) => r.phase === "reunion");
+    if (saves.length === 0 && open.length === 0) {
       await this.start(undefined);
       return;
     }
+    // A shared world in progress goes first: someone else may already be
+    // standing in it, waiting.
+    const shared = open.slice(0, 2).flatMap((r, i) =>
+      (["her", "his"] as const).map((role) => ({
+        key: `${i === 0 ? "" : String(i + 1)}${role === "her" ? "h" : "i"}`,
+        label: `the reunion — rejoin as ${role === "her" ? r.her : r.his}`,
+        action: () => this.enterReunion(r.id, role),
+      })),
+    );
     const options = saves.slice(0, 3).map((save, i) => ({
       key: String(i + 1),
       label: `continue — ${describeSave(save)}`,
       action: () => void this.start(save.id),
     }));
     this.menu = [
+      ...shared,
       ...options,
       { key: "n", label: "begin a new evening", action: () => void this.start(undefined) },
     ];
     ui.showMenu(
       "However Far",
-      "The story remembers where you left it.",
+      open.length > 0
+        ? "Someone is already on the other side of this."
+        : "The story remembers where you left it.",
       this.menu.map(({ key, label }) => ({ key, label })),
     );
   }
@@ -147,9 +181,19 @@ export class PlayScene extends Phaser.Scene {
     const dir = this.heldDirection();
     if (!dir) return;
     const before = this.world.state;
-    const after = tryMove(before, this.world.area, dir);
+    // Movement is applied locally in both modes: it only ever moves you, so
+    // there is nothing for two players to disagree about. In the shared world
+    // it goes through the reunion rules, which make the other person solid.
+    const after = this.reunion
+      ? this.stepInReunion(dir)
+      : tryMove(before, this.world.area, dir);
     this.world = { ...this.world, state: after };
     if (after.pos.x !== before.pos.x || after.pos.y !== before.pos.y) {
+      // In the shared world every step is broadcast: the other player is
+      // watching, and a partner who teleports once a minute is not company.
+      if (this.reunion) {
+        this.reunion.client.send({ type: "moveTo", pos: { ...after.pos } });
+      }
       this.moving = true;
       this.tweens.add({
         targets: this.player,
@@ -161,6 +205,16 @@ export class PlayScene extends Phaser.Scene {
         },
       });
     }
+  }
+
+  /** One step through the reunion rules, keeping the shared state authoritative. */
+  private stepInReunion(dir: Direction): AreaGameState {
+    const reunion = this.reunion;
+    const w = this.world;
+    if (!reunion || !w) throw new Error("stepInReunion outside a shared world");
+    const next = reunionMove(reunion.state, w.area, reunion.role, dir);
+    reunion.state = next;
+    return projectPlayer(next, reunion.role);
   }
 
   /**
@@ -219,6 +273,12 @@ export class PlayScene extends Phaser.Scene {
    * and every portal refuses to open.
    */
   private mirror(action: Parameters<typeof sendAction>[1]): void {
+    // In the shared world the socket is the only channel, and the server is
+    // authoritative for everything except where you personally are standing.
+    if (this.reunion) {
+      this.reunion.client.send(action);
+      return;
+    }
     if (this.session.mode !== "server") return;
     const pos = this.world?.state.pos;
     if (
@@ -347,6 +407,17 @@ export class PlayScene extends Phaser.Scene {
     const portal = portalUnderPlayer(w.state, w.area);
     if (!portal) return;
 
+    if (this.reunion) {
+      // Both of them go through together, so the server decides and tells
+      // them both; there is nothing sensible to apply optimistically here.
+      const seed = `${w.area.id}/${portal.id}`;
+      if (portal.transition.type !== "area") {
+        this.showStage(portal.transition.type === "ending" ? "closing" : "writing", seed);
+      }
+      this.reunion.client.send({ type: "portal", portalId: portal.id });
+      return;
+    }
+
     if (this.session.mode === "server") {
       const seed = `${w.area.id}/${portal.id}`;
       if (portal.transition.type !== "area") {
@@ -366,14 +437,7 @@ export class PlayScene extends Phaser.Scene {
             this.buildArea();
             ui.showNarration(result.area.description);
           } else if (result.kind === "threshold") {
-            // The finale is authored prose, not a one-line hint. Escape is
-            // deliberately not offered: this is where the path ends.
-            const ending = result.ending;
-            ui.showVeil(
-              ending?.title ?? "A threshold.",
-              ending?.closingText ?? result.summary,
-              ending ? ending.threshold : "esc · back",
-            );
+            this.reachedThreshold(result.summary, result.ending);
           }
         })
         .catch((err: unknown) => {
@@ -400,6 +464,207 @@ export class PlayScene extends Phaser.Scene {
     } else {
       ui.showVeil("An ending.", result.hint, "esc · back");
     }
+  }
+
+  /**
+   * The path ends. The finale is authored prose, not a one-line hint, so it
+   * gets the whole veil — and then, once they have had it, the one thing this
+   * ending does not do is close the story. STORY.md is explicit: a solo path
+   * stops at a threshold. The way past it is the other player.
+   */
+  private reachedThreshold(summary: string, ending?: ThresholdEnding): void {
+    ui.showVeil(
+      ending?.title ?? "A threshold.",
+      ending?.closingText ?? summary,
+      "space · and then?",
+    );
+    const path = this.world?.area.path;
+    const side: SoloPath | undefined = path === "her" || path === "his" ? path : undefined;
+    if (!side || this.session.mode !== "server" || !this.session.id) return;
+
+    this.menu = [
+      {
+        key: " ",
+        label: "",
+        action: () => this.offerTheCall(side, ending?.threshold ?? summary),
+      },
+    ];
+  }
+
+  /** The Call: the other side of the story, and the only way past the threshold. */
+  private offerTheCall(path: SoloPath, threshold: string): void {
+    this.menu = [
+      { key: "r", label: "reach for them", action: () => void this.runCall(path) },
+      {
+        key: "n",
+        label: "not yet — sit with it",
+        action: () => ui.showVeil("A threshold.", threshold, ""),
+      },
+    ];
+    ui.showMenu(
+      path === "her" ? "You cannot cross alone." : "You cannot reach her alone.",
+      path === "her"
+        ? "The way home is right there and it will not open for one pair of hands. Somewhere on the other side of it, someone spent this whole time looking for you. The Reunion is the two of you working the same crossing at once — and it only opens if you both reach."
+        : "You know where she is now. Knowing turns out not to be a door. But she is standing at one, on the far side, and it will not open for one pair of hands either. The Reunion is the two of you working the same crossing at once — and it only opens if you both reach.",
+      this.menu.map(({ key, label }) => ({ key, label })),
+    );
+  }
+
+  private async runCall(path: SoloPath): Promise<void> {
+    const veil = document.getElementById("veil");
+    if (!veil || !this.session.id) return;
+    const draft = await showCall(path, veil);
+    if (!draft) {
+      ui.showVeil("Not yet.", "The bell keeps. It has waited longer than this.", "");
+      return;
+    }
+    ui.showVeil("Sending.", "Putting your name to it.", "");
+    try {
+      const playthrough = await fetchExport(this.session.id, draft.self.name);
+      const result = await placeCall(draft, path, playthrough);
+      if (result.kind === "refused") {
+        this.callRefused(result.message, path, draft);
+        return;
+      }
+      if (result.kind === "paired") {
+        this.enterReunion(result.reunionId, result.role);
+        return;
+      }
+      this.waitForAnswer(draft, path);
+    } catch (err) {
+      this.callRefused(
+        err instanceof Error ? err.message : "the call did not carry",
+        path,
+        draft,
+      );
+    }
+  }
+
+  private callRefused(message: string, path: SoloPath, draft: CallDraft): void {
+    this.menu = [
+      { key: "r", label: "try again", action: () => void this.runCall(path) },
+      {
+        key: "n",
+        label: "leave it for now",
+        action: () => ui.showVeil("Not yet.", "The bell keeps.", ""),
+      },
+    ];
+    ui.showMenu(
+      "It did not carry.",
+      `${message}${draft.calling.email ? ` (reaching for ${draft.calling.email})` : ""}`,
+      this.menu.map(({ key, label }) => ({ key, label })),
+    );
+  }
+
+  /**
+   * Waiting for the other side. Deliberately not a spinner either: a player
+   * who has just finished this story is very good at waiting, and the game
+   * says so.
+   */
+  private waitForAnswer(draft: CallDraft, path: SoloPath): void {
+    ui.showInterstitial(
+      path === "her" ? "Rung." : "Written in.",
+      [
+        `It is out there now, with ${draft.calling.name}'s name in it.`,
+        "Nothing to do but wait, which by now you are good at.",
+        "The moment they reach back, this opens.",
+        "You can close the game. It keeps. It has kept this long.",
+      ],
+      0,
+    );
+    const started = Date.now();
+    const tick = async (): Promise<void> => {
+      const answer = await pollCall(draft.self.email);
+      if (answer) {
+        this.enterReunion(answer.reunionId, answer.role);
+        return;
+      }
+      // Slow down after the first few minutes: this is a wait measured in
+      // days, not seconds, and hammering someone's laptop helps nobody.
+      const elapsed = Date.now() - started;
+      const delay = elapsed < 5 * 60_000 ? 5_000 : 60_000;
+      if (this.reunion) return;
+      window.setTimeout(() => void tick(), delay);
+    };
+    window.setTimeout(() => void tick(), 3_000);
+  }
+
+  /** Open the shared world. From here the socket owns the game. */
+  private enterReunion(reunionId: string, role: ReunionRole): void {
+    if (this.reunion) return;
+    ui.showInterstitial(
+      "Someone reached back.",
+      [
+        "The bell has something to ring against.",
+        "Two sides of one place, being written into the same room.",
+      ],
+      0,
+    );
+    const client = new ReunionClient(reunionId, role, {
+      onWelcome: ({ area, state, ending }) => {
+        ui.hideVeil();
+        this.reunion = { client, role, state };
+        this.world = { area, state: projectPlayer(state, role) };
+        this.buildArea();
+        if (ending) {
+          ui.showVeil(ending.title, ending.closingText, "");
+          return;
+        }
+        ui.showNarration(area.description);
+      },
+      onTurn: ({ result }) => this.applySharedTurn(result),
+      onPresence: (state) => {
+        if (!this.reunion) return;
+        this.reunion.state = state;
+        if (this.world) {
+          this.world = { ...this.world, state: projectPlayer(state, this.reunion.role) };
+        }
+        this.redrawEntities();
+      },
+      onStage: (stage) =>
+        this.showStage(stage, this.world?.area.id ?? "reunion"),
+      onChunk: (text) => ui.appendNarration(text),
+      onError: (message) => ui.showVeil("A snag.", message, "esc · back"),
+      onClosed: () => {
+        if (!this.reunion) return;
+        ui.showVeil(
+          "The line went quiet.",
+          "The connection to the shared world dropped. Nothing is lost — reload to step back in.",
+          "",
+        );
+      },
+    });
+    client.connect();
+  }
+
+  private applySharedTurn(
+    result:
+      | { kind: "area"; area: AreaSpec; state: ReunionGameState }
+      | { kind: "ok"; state: ReunionGameState; ack?: string }
+      | { kind: "ending"; summary: string; ending?: ReunionEnding },
+  ): void {
+    const reunion = this.reunion;
+    if (!reunion) return;
+    if (result.kind === "ending") {
+      ui.showVeil(
+        result.ending?.title ?? "Together.",
+        result.ending?.closingText ?? result.summary,
+        "",
+      );
+      return;
+    }
+    reunion.state = result.state;
+    const projected = projectPlayer(result.state, reunion.role);
+    if (result.kind === "area") {
+      ui.hideVeil();
+      this.world = { area: result.area, state: projected };
+      this.buildArea();
+      ui.showNarration(result.area.description);
+      return;
+    }
+    if (this.world) this.world = { ...this.world, state: projected };
+    if (result.ack) ui.endStreamingNarration(result.ack);
+    this.redrawEntities();
   }
 
   private buildArea(): void {
@@ -470,6 +735,7 @@ export class PlayScene extends Phaser.Scene {
       this.entityLayer.add(rect);
       this.entityLayer.add(label);
     }
+    this.drawPartner();
     for (const portal of this.world!.area.portals) {
       const marker = this.add
         .rectangle(
@@ -482,6 +748,35 @@ export class PlayScene extends Phaser.Scene {
       this.entityLayer.add(marker);
     }
     this.entityLayer.setDepth(5);
+  }
+
+  /**
+   * The other player. Drawn from the shared state rather than as an area
+   * entity, because they are not furniture — and only while they are actually
+   * attached, so a dropped connection reads as an empty room rather than a
+   * ghost standing still.
+   */
+  private drawPartner(): void {
+    const reunion = this.reunion;
+    if (!reunion) return;
+    const partner = reunion.role === "her" ? reunion.state.his : reunion.state.her;
+    if (!partner.connected) return;
+
+    const x = partner.pos.x * TILE + TILE / 2;
+    const y = partner.pos.y * TILE + TILE / 2;
+    const sprite = this.add
+      .rectangle(x, y, TILE - 14, TILE - 10, 0xe8e6df)
+      .setStrokeStyle(2, 0x8fd3ff, 1);
+    const label = this.add
+      .text(x, partner.pos.y * TILE - 4, partner.name, {
+        fontFamily: "ui-monospace, Consolas, monospace",
+        fontSize: "10px",
+        color: "#8fd3ff",
+      })
+      .setOrigin(0.5, 1)
+      .setShadow(0, 1, "#000000", 2);
+    this.entityLayer.add(sprite);
+    this.entityLayer.add(label);
   }
 
   private updateHud(): void {
