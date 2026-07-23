@@ -120,12 +120,11 @@ Goal: a large, coherent, growing pixel-art database, operable by agents (ADR-001
       `validate --frames`, `import --frames --frame-ms`), stored as ordered frame
       hashes on one catalog record
 
-**Open for the owner (art direction, not engineering):** the draft palettes fight the
-tone. Sweetie-16 (her world) has no brown, so Kenney's earth and timber quantize to
-bright orange, and its greens land on lime — a cheerful register, when STORY.md says
-Path A "may get dark". His world's palette casts concrete lavender. Locking real
-per-path palettes is a recorded decision (ADR-0011) and wants the owner's eye; the
-gate re-runs over every committed source, so a palette swap is one `npm run seed`.
+- [x] Draft palettes rebuilt as 32-colour tonal ramps per path (ADR-0020), after the
+      first CC0 batch exposed that her world had no brown and his had no green, and
+      that both pinned their path to a single mood. Still drafts — **locking them
+      against real gameplay is the owner's call**, and stays cheap because every art
+      source is committed, so a swap is one `npm run seed`
 
 ## Phase 6 — The living RPG
 

@@ -350,3 +350,47 @@ attribution bug, not a shortcut.
 **Consequence:** anything that writes to the asset DB goes through `putAsset`, which
 owns both rules. Code that computes a catalog path itself, or that replaces `source` on
 a derivative, is a bug.
+
+## ADR-0020: Draft palettes rebuilt as tonal ramps, per path
+
+**Status:** Accepted · 2026-07-22 · owner-approved
+
+The first draft palettes were borrowed 16-colour sets (her world started from
+Sweetie-16). Once real CC0 art was pushed through the gate, two gaps showed up that
+only appear when you look at the output:
+
+- **Her world had no brown.** Every imported earth tile, timber wall and wooden fence
+  quantized to bright orange, because orange was the nearest thing to brown on offer.
+- **His world had no green.** A contemporary Japanese neighbourhood needs hedges and
+  front yards; the hand-authored hedge tile came out teal-and-purple.
+
+Both palettes also pinned their world to one emotional register — bright and cheerful
+for her, muted and grey for his — which contradicts STORY.md's tone discipline
+("Path A may get dark, but it is an adventure; Path B may have warmth, but it is a
+drama") and the owner's references: Re:Zero for her path, *Rascal Does Not Dream of
+Bunny Girl Senpai* for his.
+
+Both are now **32 colours built as deliberate tonal ramps** rather than a flat set of
+pleasing hues, so each world can swing across its whole register without leaving the
+palette:
+
+- **her-world:** neutrals · earth/wood · foliage · cool stone · blood · gold · arcane ·
+  sky/water. The blood and arcane ramps are what let the Director ask for something
+  horrific without the gate prettifying it.
+- **his-world:** neutrals · concrete/asphalt · warm wood · skin · foliage · sky ·
+  warm lamplight · uniform navy · red accent. The warm ramps are what keep his path
+  from being uniformly grey.
+
+**Non-obvious mechanic worth remembering:** `quantize` picks the nearest colour in RGB
+space, so palette entries *compete*. The first rebuild kept neutral greys and a pale
+cyan; Kenney's cool blue-grey stone landed nearer the cyan, and the stone floor came
+out solid azure. Fixing it meant making the stone ramp cool-leaning, not adding more
+greys. When an asset gates to a surprising colour, the fix is usually the *distance
+between* palette entries, not the entry you expected it to hit.
+
+**Consequence:** palettes remain drafts in `apps/asset-studio/styles/` until the owner
+locks them against real gameplay. That stays cheap: every art source is committed
+(sprite-as-data specs and raw CC0 files), so a palette change is one `npm run seed`
+and the whole database re-gates. Sprite-as-data specs embed their own palette, so any
+palette swap should regenerate them too, or their colours merely snap to the nearest
+new entry.

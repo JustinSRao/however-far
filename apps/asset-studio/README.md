@@ -164,14 +164,24 @@ All of it is starter art against draft palettes; replace it freely once the look
 is decided. Because every source is committed and re-gated on seed, changing a
 palette is one `npm run seed` away from re-styling the whole database.
 
-## A note on the draft palettes
+## The palettes
 
-Worth your eye before locking anything: the fantasy palette (Sweetie-16) has no
-brown, so imported earth and timber quantize to bright orange, and its greens
-land on lime. That reads cheerful, which fights the story's own note that her
-path *may get dark*. The real world's palette gives concrete a lavender cast.
-Neither is a bug — the gate is doing exactly what it should — but the palettes
-themselves are the next art-direction decision.
+Each world has 32 colours arranged as **ramps** — small runs of related shades —
+rather than a scatter of nice-looking hues. Her world: neutrals, earth and wood,
+foliage, cool stone, blood, gold, arcane purples, sky and water. His world:
+neutrals, concrete and asphalt, warm wood, skin, foliage, sky, lamplight, uniform
+navy, and a red accent.
+
+The ramps exist so neither world is stuck in one mood. Her path can be radiant or
+genuinely horrific without leaving its palette; his can be grey and aching or warm
+and alive. That range lives in the art request's *mood*, not in the style bible —
+the bible only says what the world looks like, never how it feels today.
+
+They are still **drafts**, and locking them is a recorded decision (ADR-0011).
+Changing your mind is cheap: every source file is in the repo, so a new palette is
+one `npm run seed` away from re-styling all 30 assets. If you do swap one, also
+regenerate the sprite-as-data specs in `sprites/`, because those name their own
+colours and would otherwise just snap to whatever is nearest.
 
 ## Still to come
 
