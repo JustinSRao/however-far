@@ -102,8 +102,23 @@ export function costLedgerPath(): string {
   return join(ledgerDir(), "costs.jsonl");
 }
 
+/**
+ * Running totals for this process, so a caller can attribute spend to a span
+ * of its own work by sampling before and after. The JSONL ledger stays the
+ * durable record (ADR-0018); this is just a cheap counter on top of it, and
+ * it counts calls that failed to write to disk too.
+ */
+let liveCalls = 0;
+let liveUsd = 0;
+
+export function costCounter(): { calls: number; usd: number } {
+  return { calls: liveCalls, usd: liveUsd };
+}
+
 /** Append one call to the ledger. Best-effort: a failed write never breaks play. */
 export function recordUsage(event: Omit<UsageEvent, "ts" | "costUsd">): void {
+  liveCalls++;
+  liveUsd += computeCostUsd(event.model, event, event.images) ?? 0;
   try {
     const full: UsageEvent = {
       ...event,

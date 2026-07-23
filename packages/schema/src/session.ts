@@ -23,6 +23,11 @@ export const AreaSessionSave = z.object({
   arc: StoryArc.optional(),
   canon: z.array(CanonFact).default([]),
   /** Consecutive accepted areas that advanced no arc beat (drift detector). */
+  /**
+   * What this playthrough has cost so far in USD (ADR-0018). Defaulted so
+   * saves written before budgeting still load.
+   */
+  spentUsd: z.number().min(0).default(0),
   areasSinceBeatProgress: z.number().int().min(0).default(0),
   endingSummary: z.string().max(2000).optional(),
 });

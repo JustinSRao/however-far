@@ -160,7 +160,13 @@ Goal: both paths playable start → threshold ending, feeling like a real game.
       branch. Cosmetic by construction — a test pins that sheet, inventory, quests and
       position are untouched, so the always-playable invariant holds
 - [ ] Path endings: threshold finales per STORY.md; full playthroughs of both paths
-- [ ] Cost guardrails: per-session token budgets, graceful degradation
+- [x] Cost guardrails: a **soft** per-session USD budget
+      (`HOWEVERFAR_SESSION_BUDGET_USD`, default $3) tracked on the save via an
+      in-process cost counter over the ADR-0018 ledger. Soft is the design — going
+      over cuts the optional spend (speculation stops first, since an area nobody
+      walked into is the only spend that buys nothing) and never blocks the area a
+      player is standing at a door waiting for. The always-playable invariant
+      outranks the budget
 
 ## Phase 7 — The Reunion (multiplayer "DLC", long-term)
 

@@ -15,6 +15,7 @@ import {
   getPrologueAreas,
 } from "@howeverfar/content";
 import { CanonLedger } from "./canonLedger.js";
+import { costCounter } from "./costs.js";
 import { DIRECTOR_CONFIG } from "./config.js";
 import type { ModelClient } from "./modelClient.js";
 import { advanceArc, buildProfile, isFinalAct, reviseArc } from "./stages.js";
@@ -37,6 +38,15 @@ const DRIFT_THRESHOLD = 3;
  * asks when the player is walking at a door) and capped.
  */
 const MAX_SPECULATIONS = Number(process.env["HOWEVERFAR_MAX_SPECULATIONS"] ?? 12);
+
+/**
+ * Soft budget per playthrough in USD (ADR-0018/0013). "Soft" is the whole
+ * design: going over never blocks the area a player is standing at a door
+ * waiting for, because the always-playable invariant outranks the budget.
+ * What it does is cut the optional spend — speculation stops first, since an
+ * area nobody walked into is the only spend that buys nothing.
+ */
+const SESSION_BUDGET_USD = Number(process.env["HOWEVERFAR_SESSION_BUDGET_USD"] ?? 3);
 
 /** Stable 32-bit seed from a session id — same session, same dice, forever. */
 function seedFromId(id: string): number {
@@ -97,6 +107,7 @@ export class WorldDirector {
       areas: Object.fromEntries(areas.map((a) => [a.id, a])),
       signals: [],
       canon: [],
+      spentUsd: 0,
       areasSinceBeatProgress: 0,
     };
   }
@@ -114,22 +125,54 @@ export class WorldDirector {
    * Fire-and-forget: failures are swallowed here and retried for real if the
    * player actually steps through.
    */
+  /** What this playthrough has cost so far. */
+  spentUsd(): number {
+    return this.session.spentUsd;
+  }
+
+  /** True once the playthrough has spent past its soft budget. */
+  overBudget(): boolean {
+    return this.session.spentUsd >= SESSION_BUDGET_USD;
+  }
+
+  /**
+   * Run `work`, attributing whatever it spends to this session. Sampling the
+   * process-wide counter around the call is accurate as long as one session
+   * generates at a time, and errs high (never low) under concurrency — the
+   * safe direction for a budget.
+   */
+  private async charge<T>(work: () => Promise<T>): Promise<T> {
+    const before = costCounter().usd;
+    try {
+      return await work();
+    } finally {
+      this.session.spentUsd += Math.max(0, costCounter().usd - before);
+    }
+  }
+
   approach(portalId: string): void {
     if (this.session.phase !== "generated") return;
     if (this.speculationCount >= MAX_SPECULATIONS) return;
+    if (this.overBudget()) {
+      this.log(
+        `over budget ($${this.session.spentUsd.toFixed(2)} of $${SESSION_BUDGET_USD.toFixed(2)}) — not speculating; play continues at full quality`,
+      );
+      return;
+    }
 
     const area = this.currentArea();
     const portal = area.portals.find((p) => p.id === portalId);
     if (!portal || portal.transition.type !== "generate") return;
+    const hint = portal.transition.hint;
 
     const key = `${area.id}/${portalId}`;
     if (this.speculations.has(key)) return;
 
     this.speculationCount++;
     this.log(`speculating past "${portal.label}" (${this.speculationCount}/${MAX_SPECULATIONS})`);
-    const pending = writeArea(this.model, this.writerContext(portal.transition.hint), {
-      log: this.log,
-    });
+    const pending = this.charge(() =>
+      writeArea(this.model, this.writerContext(hint), { log: this.log }),
+    );
     // Attach a catch so an early rejection never becomes an unhandled
     // rejection; the stored promise keeps the original outcome.
     pending.catch(() => undefined);
@@ -329,8 +372,11 @@ export class WorldDirector {
     hint: string,
     portalId?: string,
   ): Promise<WorldTurnResult> {
-    const result = await this.claimSpeculation(portalId) ??
-      (await writeArea(this.model, this.writerContext(hint), { log: this.log }));
+    const result =
+      (await this.claimSpeculation(portalId)) ??
+      (await this.charge(() =>
+        writeArea(this.model, this.writerContext(hint), { log: this.log }),
+      ));
     await this.acceptArea(result.area, result.advancesBeatId);
     return { kind: "area", area: result.area, state: this.session.state };
   }
