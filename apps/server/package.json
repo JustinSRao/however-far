@@ -10,14 +10,18 @@
     "start": "tsx src/index.ts"
   },
   "dependencies": {
+    "@fastify/websocket": "^11.3.0",
     "@howeverfar/art": "*",
+    "@howeverfar/content": "*",
     "@howeverfar/director": "*",
+    "@howeverfar/entitlement": "*",
     "@howeverfar/library": "*",
     "@howeverfar/schema": "*",
     "fastify": "^5.10.0",
     "zod": "^3.24.0"
   },
   "devDependencies": {
+    "@types/ws": "^8.18.1",
     "tsx": "^4.19.0"
   }
 }

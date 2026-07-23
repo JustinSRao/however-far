@@ -87,6 +87,34 @@ export {
   type WorldWriterContext,
 } from "./worldPrompts.js";
 export {
+  checkReunionEnding,
+  createReunionArc,
+  exportPlaythrough,
+  mergeCanon,
+  mergeCharacters,
+  ReunionFailedError,
+  ReunionWriterOutput,
+  writeReunionArea,
+  writeReunionFinale,
+  type WriteReunionAreaResult,
+} from "./reunion.js";
+export {
+  ReunionDirector,
+  type ReunionDirectorOptions,
+  type ReunionTurnResult,
+} from "./reunionDirector.js";
+export {
+  buildReunionArchitectUser,
+  buildReunionFinaleUser,
+  buildReunionWriterUser,
+  REUNION_ARCHITECT_SYSTEM,
+  REUNION_FINALE_SYSTEM,
+  REUNION_WRITER_SYSTEM,
+  type ReunionArchitectContext,
+  type ReunionFinaleContext,
+  type ReunionWriterContext,
+} from "./reunionPrompts.js";
+export {
   advanceArc,
   buildProfile,
   checkContinuity,

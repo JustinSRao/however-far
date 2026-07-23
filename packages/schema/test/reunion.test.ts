@@ -44,6 +44,11 @@ const playthrough = (path: "her" | "his"): PlaythroughExport => ({
   },
   canon: [],
   characters: [],
+  sheet: {
+    attributes: { might: 2, wits: 1, heart: 3 },
+    resources: { vigor: { current: 4, max: 5 }, focus: { current: 3, max: 4 } },
+    standings: {},
+  },
   ending: {
     title: "The Gate at Low Tide",
     closingText: "x".repeat(250),

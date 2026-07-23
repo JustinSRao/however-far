@@ -38,8 +38,14 @@ export const PlaythroughExport = z.object({
   completedAt: z.string().datetime(),
   profile: PlayerProfile,
   arc: StoryArc,
-  canon: z.array(CanonFact).max(400),
-  characters: z.array(CharacterRecord).max(120),
+  canon: z.array(CanonFact).max(1000),
+  characters: z.array(CharacterRecord).max(300),
+  /**
+   * What they ended their path as. They arrive at the Reunion having grown —
+   * an attribute earned over thirty areas should not be handed back at the
+   * door.
+   */
+  sheet: CharacterSheet,
   /** The path ending, including its `reunionSeeds` — the point of all this. */
   ending: ThresholdEnding,
   /** The road walked: names and prose, not maps. */
@@ -51,7 +57,7 @@ export const PlaythroughExport = z.object({
         description: z.string().min(1).max(2000),
       }),
     )
-    .max(80),
+    .max(200),
 });
 export type PlaythroughExport = z.infer<typeof PlaythroughExport>;
 
@@ -85,6 +91,13 @@ export const CrossingCall = z.object({
   /** Who they are calling for. */
   calling: CallerIdentity,
   path: SoloPath,
+  /**
+   * Their Reunion key (ADR-0024). Optional in the schema because a build with
+   * `HOWEVERFAR_REUNION_UNLOCKED=1` never asks for one; the server decides
+   * whether its absence is allowed, and every player is checked separately —
+   * one purchase does not buy two seats.
+   */
+  license: z.string().min(1).max(120).optional(),
   playthrough: PlaythroughExport,
 });
 export type CrossingCall = z.infer<typeof CrossingCall>;
@@ -182,6 +195,12 @@ export const ReunionSessionSave = z.object({
   /** The two playthroughs this world was made from. */
   her: PlaythroughExport,
   his: PlaythroughExport,
+  /**
+   * Who each side is, as they gave it in their Call. This is how the player
+   * who called first finds out they were answered — a name is not an address
+   * and two people can share one.
+   */
+  contacts: z.object({ her: CallerIdentity, his: CallerIdentity }),
   spentUsd: z.number().min(0).default(0),
   areasSinceBeatProgress: z.number().int().min(0).default(0),
   ending: ReunionEnding.optional(),

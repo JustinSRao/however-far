@@ -4,7 +4,7 @@ export {
   getAnchorScenes,
   isAnchorScene,
 } from "./anchor.js";
-export { PATH_SEED_CANON } from "./story.js";
+export { PATH_SEED_CANON, REUNION_SEED_CANON } from "./story.js";
 export {
   PATH_CHOICE_PORTALS,
   PROLOGUE_CANON,

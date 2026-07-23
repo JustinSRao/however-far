@@ -54,3 +54,45 @@ export const PATH_SEED_CANON: Readonly<
     },
   ],
 };
+
+/**
+ * The Reunion's fixed seeds (Phase 7) — loaded as immutable canon the moment
+ * two calls answer each other.
+ *
+ * STORY.md fixes the Reunion's shape without fixing its content: both paths
+ * end at a threshold, only the Reunion resolves, and the finale is generated
+ * from both players' canon. These state that shape as facts the Director
+ * cannot write around. The one inference beyond STORY.md — that the seam
+ * between the two worlds is the railway underpass — follows from where she
+ * vanished, and is recorded in docs/REUNION.md for the owner to keep or cut.
+ */
+export const REUNION_SEED_CANON: ReadonlyArray<{
+  statement: string;
+  entities: string[];
+}> = [
+  {
+    statement:
+      "The two paths are the same span of time lived from either side: everything Suzune did in the other world and everything Itsuki did here happened at once, to each other, without either of them knowing.",
+    entities: ["suzune", "itsuki"],
+  },
+  {
+    statement:
+      "Suzune stands at a way home she cannot cross alone, and Itsuki has learned what happened to her and cannot reach her alone. Neither threshold was ever passable from one side; that is what has been true about it all along.",
+    entities: ["suzune", "itsuki"],
+  },
+  {
+    statement:
+      "The place where the two worlds touch is the railway underpass on Aozora Lane, where she vanished — on his side an underpass, on hers whatever her world made of the same seam.",
+    entities: ["railway-underpass", "aozora-lane", "suzune", "itsuki"],
+  },
+  {
+    statement:
+      "The crossing can only be worked from both sides at once, by both of them, using what each of them earned on their own side. Nothing either of them learned alone is enough.",
+    entities: ["suzune", "itsuki"],
+  },
+  {
+    statement:
+      "This is the only ending that resolves. They reach each other. Neither dies, neither gives up, neither is left behind, and the world that forgot her does not get to keep forgetting.",
+    entities: ["suzune", "itsuki"],
+  },
+];
