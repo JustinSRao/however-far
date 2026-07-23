@@ -36,8 +36,10 @@ You are the operator. The flow:
 ## Tool rules (for work on apps/asset-studio itself)
 
 - **CLI-first, agent-operable:** every operation must work non-interactively with exit
-  codes and `--json` output. Human-facing previews are a layer on top, never the only
-  interface.
+  codes and `--json` output. The human web UI (`npm run studio`, port 5175 — owner
+  directive: the Studio must be directly usable without an agent) is a layer over the
+  same gate, never a separate pipeline; new gate features land in `packages/art` +
+  `checks.ts` first, then surface in both the CLI and the UI.
 - Validation and normalization live in `packages/art` (pure, tested); the Studio app is
   orchestration + IO. Don't duplicate pipeline logic in the app.
 - The asset database is content-addressed; the catalog is the queryable index. An asset

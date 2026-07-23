@@ -88,7 +88,9 @@ Goal: a large, coherent, growing pixel-art database, operable by agents (ADR-001
       `catalog` — every asset passes `processArt` + checks (dimensions, palette,
       transparency, frame consistency) before entering the DB.
       *Progress: scaffold landed with working `validate` + `normalize` (tested,
-      smoke-tested end to end) and draft per-path style bibles*
+      smoke-tested end to end), draft per-path style bibles, and a human-usable web
+      UI (`npm run studio`, drag-and-drop gate with before/after previews — owner
+      directive: usable without an agent)*
 - [ ] Asset database in `packages/library`: content-addressed storage + queryable
       catalog (kind, tags, palette, size, source, license)
 - [ ] CC0 ingestion: curate Kenney/OpenGameArt packs (tilesets, base characters, props),

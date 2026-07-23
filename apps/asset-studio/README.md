@@ -1,10 +1,23 @@
 # Asset Studio
 
 The one gate every asset passes on its way into the game (ADR-0011, CLAUDE.md
-invariant 8). CLI-first and agent-operable: non-interactive, exit codes, `--json`
-output — Claude Code / Codex drive it conversationally ("create a village tileset"
-→ clarifying questions → generate/import → validate → catalog). See the
-`asset-studio` skill for the operator playbook.
+invariant 8). Two ways in, one pipeline:
+
+- **Agent-operable CLI** — non-interactive, exit codes, `--json` output; Claude
+  Code / Codex drive it conversationally ("create a village tileset" → clarifying
+  questions → generate/import → validate → catalog). See the `asset-studio` skill.
+- **Human-usable web UI** — the same gate behind a drag-and-drop page:
+
+```sh
+npm run studio -w @howeverfar/asset-studio     # http://localhost:5175
+```
+
+Pick a style bible (palette shown as swatches) and an asset kind, drop PNGs, and
+each one runs the gate: normalize (pixelize → palette lock → outline) → validate
+(grid, palette compliance, transparency, coverage). You get before/after previews
+on a transparency checkerboard, PASS/FAIL findings, and a download of the
+normalized PNG. A "validate only" toggle checks already-normalized assets without
+reprocessing them.
 
 ## Commands (Phase 5 scaffold — validate/normalize are live)
 
