@@ -24,6 +24,7 @@ import {
   type Direction,
 } from "./deps.js";
 import { fetchExport, placeCall, pollCall, showCall, type CallDraft } from "./call.js";
+import { ensureTileTexture } from "./tiles.js";
 import { ReunionClient } from "./reunionClient.js";
 import {
   connect,
@@ -742,11 +743,11 @@ export class PlayScene extends Phaser.Scene {
       for (let x = 0; x < area.width; x++) {
         const tile = area.tiles[area.ground[y]?.[x] ?? 0];
         if (!tile) continue;
-        const color = Phaser.Display.Color.HexStringToColor(tile.color).color;
-        const rect = this.add
-          .rectangle(x * TILE + TILE / 2, y * TILE + TILE / 2, TILE, TILE, color)
-          .setStrokeStyle(1, 0x000000, 0.18);
-        this.mapLayer.add(rect);
+        // A generated pixel texture in the tile's own colour (tiles.ts) rather
+        // than a flat rectangle.
+        const key = ensureTileTexture(this, tile);
+        const img = this.add.image(x * TILE + TILE / 2, y * TILE + TILE / 2, key);
+        this.mapLayer.add(img);
       }
     }
 
