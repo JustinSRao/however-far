@@ -15,6 +15,7 @@ Layers used and their contributors (per the generator's `sheet_definitions`):
 | Layer | Contributors |
 |---|---|
 | Body (male, light) | Stephen Challener (Redshrike), Marcel van de Steeg (MadMarcel), bluecarrot16, ElizaWy |
+| Eyes (human) | Stephen Challener (Redshrike), ElizaWy, bluecarrot16 |
 | Hair (plain) | bluecarrot16, ElizaWy |
 | Torso (longsleeve shirt) | original by Johannes Sjölund (wulax), recolors/cleanup by JaidynReiman, ElizaWy, bluecarrot16 |
 | Legs (pants) | original by Johannes Sjölund (wulax), edited for other bases by Joe White, JaidynReiman, ElizaWy, bluecarrot16 |
