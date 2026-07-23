@@ -71,6 +71,37 @@ export const STUDIO_PAGE = `<!doctype html>
   }
   .dl:hover { border-color: var(--accent); }
   .err-banner { color: var(--err); font-size: 13px; }
+  .keep {
+    margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--edge);
+    display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+  }
+  .keep input, .keep select {
+    background: #0e0f16; color: var(--text); border: 1px solid var(--edge);
+    border-radius: 4px; padding: 5px 7px; font-size: 12px; font-family: inherit;
+  }
+  .keep input.name { width: 150px; }
+  .keep input.tags { width: 120px; }
+  .keep input.attrib { width: 110px; }
+  .keep button {
+    background: var(--accent); color: #14161f; border: 0; border-radius: 4px;
+    padding: 6px 12px; font-size: 12px; font-weight: bold; cursor: pointer;
+  }
+  .keep button:disabled { opacity: 0.5; cursor: default; }
+  .keep .note { font-size: 12px; color: var(--dim); width: 100%; }
+  .keep .note.ok { color: var(--ok); }
+  .keep .note.bad { color: var(--err); }
+  h2 { font-size: 15px; font-weight: normal; letter-spacing: 0.1em;
+       text-transform: uppercase; color: var(--dim); margin: 34px 0 10px; }
+  .catalog { display: flex; flex-wrap: wrap; gap: 10px; }
+  .cat {
+    border: 1px solid var(--edge); border-radius: 6px; padding: 8px;
+    width: 118px; text-align: center; background: #14161f;
+  }
+  .cat img { width: 72px; height: 72px; object-fit: contain; image-rendering: pixelated;
+             background: repeating-conic-gradient(#2a2d3a 0% 25%, #1b1e29 0% 50%) 50% / 12px 12px; }
+  .cat .n { font-size: 12px; margin-top: 6px; overflow-wrap: anywhere; }
+  .cat .d { font-size: 11px; color: var(--dim); margin-top: 2px; }
+  .empty { font-size: 13px; color: var(--dim); }
 </style>
 </head>
 <body>
@@ -93,6 +124,14 @@ export const STUDIO_PAGE = `<!doctype html>
       </select>
     </div>
     <div>
+      <label>world (for the database)</label>
+      <select id="path">
+        <option value="her">her — the fantasy world</option>
+        <option value="his">his — the real world</option>
+        <option value="shared">shared — both</option>
+      </select>
+    </div>
+    <div>
       <label>mode</label>
       <div class="checkline check">
         <input type="checkbox" id="validateOnly" />
@@ -105,14 +144,19 @@ export const STUDIO_PAGE = `<!doctype html>
   <input type="file" id="file" accept="image/png" multiple hidden />
   <div id="results"></div>
 
+  <h2>Asset database</h2>
+  <div class="catalog" id="catalog"></div>
+
 <script>
 const styleSel = document.getElementById("style");
 const paletteEl = document.getElementById("palette");
 const kindSel = document.getElementById("kind");
 const validateOnly = document.getElementById("validateOnly");
+const pathSel = document.getElementById("path");
 const drop = document.getElementById("drop");
 const fileInput = document.getElementById("file");
 const results = document.getElementById("results");
+const catalogEl = document.getElementById("catalog");
 let styles = [];
 
 async function loadStyles() {
@@ -204,10 +248,104 @@ async function processOne(name, base64, beforeDataUrl) {
       '<div class="status ' + cls + '">' + status + "</div>" +
       body.findings.map((f) => '<div class="finding"><b class="' + f.level + '">[' + f.level + "] " + f.check + ":</b> " + f.message + "</div>").join("") +
       '<a class="dl" download="' + safe.replace(/\\.png$/i, "") + '.gate.png" href="' + afterDataUrl + '">download normalized PNG</a>' +
+      (errors.length ? "" : keepFormHtml(slugify(name))) +
     "</div>";
+
+  if (!errors.length) wireKeepForm(card, base64);
+}
+
+function slugify(fileName) {
+  return fileName.replace(/\\.[^.]+$/, "").toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+}
+
+/** The "keep this" row: what turns a gated PNG into a catalog entry. */
+function keepFormHtml(suggested) {
+  return '<div class="keep">' +
+    '<input class="name" placeholder="catalog name" value="' + suggested + '" />' +
+    '<input class="tags" placeholder="tags, comma-sep" />' +
+    '<select class="src">' +
+      '<option value="hand">hand-drawn</option>' +
+      '<option value="cc0">CC0 pack</option>' +
+      '<option value="sprite-data">sprite-as-data</option>' +
+      '<option value="generated">AI generated</option>' +
+    "</select>" +
+    '<input class="attrib pack" placeholder="pack" hidden />' +
+    '<input class="attrib author" placeholder="author" hidden />' +
+    '<input class="attrib url" placeholder="url" hidden />' +
+    "<button>add to database</button>" +
+    '<div class="note">the database is what the game reads — CC0 art needs its pack, author and url recorded.</div>' +
+  "</div>";
+}
+
+function wireKeepForm(card, base64) {
+  const keep = card.querySelector(".keep");
+  const srcSel = keep.querySelector(".src");
+  const attribs = [...keep.querySelectorAll(".attrib")];
+  const note = keep.querySelector(".note");
+  const button = keep.querySelector("button");
+
+  srcSel.addEventListener("change", () => {
+    for (const el of attribs) el.hidden = srcSel.value !== "cc0";
+  });
+
+  button.addEventListener("click", async () => {
+    button.disabled = true;
+    note.className = "note";
+    note.textContent = "saving…";
+    try {
+      const res = await fetch("/api/import", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          pngBase64: base64,
+          styleFile: styleSel.value,
+          kind: kindSel.value,
+          path: pathSel.value,
+          name: keep.querySelector(".name").value.trim(),
+          tags: keep.querySelector(".tags").value,
+          source: {
+            type: srcSel.value,
+            pack: keep.querySelector(".pack").value.trim(),
+            author: keep.querySelector(".author").value.trim(),
+            url: keep.querySelector(".url").value.trim(),
+          },
+        }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || res.status);
+      note.className = "note ok";
+      note.textContent = "in the database as " + body.record.name + " (" + body.record.path + ")";
+      loadCatalog();
+    } catch (err) {
+      note.className = "note bad";
+      note.textContent = err.message;
+      button.disabled = false;
+    }
+  });
+}
+
+async function loadCatalog() {
+  const assets = await (await fetch("/api/catalog")).json();
+  catalogEl.innerHTML = "";
+  if (assets.length === 0) {
+    catalogEl.innerHTML = '<div class="empty">nothing in the database yet — gate an asset above and press "add to database".</div>';
+    return;
+  }
+  for (const a of assets) {
+    const el = document.createElement("div");
+    el.className = "cat";
+    const frames = a.frames.length > 1 ? " · " + a.frames.length + "f" : "";
+    el.innerHTML =
+      '<img src="/api/asset/' + a.id + '/0.png" alt="' + a.name + '" />' +
+      '<div class="n">' + a.name + "</div>" +
+      '<div class="d">' + a.kind + " · " + a.path + " · " + a.width + "×" + a.height + frames + "</div>";
+    catalogEl.appendChild(el);
+  }
 }
 
 loadStyles();
+loadCatalog();
 </script>
 </body>
 </html>`;
