@@ -118,8 +118,17 @@ fixed at development time (ADR-0011).
 
 ## 4. Art: three sources, one gate, one database (ADR-0011)
 
-Goal: every image in the game looks like it came from one game, at $0 beyond the OpenAI
+Goal: every image in the game looks like it came from one game, at ~$0 beyond the OpenAI
 budget.
+
+> **The client now renders real art (ADR-0025).** It shipped drawing flat coloured
+> rectangles; today the player and NPCs are **LPC** character sprites (CC-BY-SA 3.0 /
+> GPL 3.0 — attribution in `apps/game/CREDITS.md`; the one non-CC0 exception), the ground
+> and props/items are pixel textures synthesised per tile from the Director's own colour
+> (`apps/game/src/tiles.ts`, `sprites.ts` — no bought atlas), and dialogue portraits come
+> from gpt-image, capped and cached. Finished external pixel art (LPC) loads directly and
+> deliberately **bypasses `processArt`**, which is only for our own placeholder/gpt-image
+> art.
 
 **Sources:**
 1. **CC0 base library** — curated Kenney/OpenGameArt tilesets, base characters, props;

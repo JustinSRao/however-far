@@ -554,3 +554,40 @@ later wants real entitlement checks, that is a hosted service and a new ADR — 
 **Not decided here:** which storefront takes the money. Stripe, Gumroad, itch, a page on
 the owner's own site — all of them can deliver a key string in a receipt, so all of them
 compose with this, and none of them is a code change beyond the fulfilment hook.
+
+## ADR-0025: The client renders real art — LPC (CC-BY-SA), procedural tiles, gpt-image portraits
+
+**Status:** Accepted · 2026-07-23
+
+The Phaser client shipped rendering only flat coloured rectangles: none of the art
+pipeline was ever wired to the screen. Fixing that surfaced two owner calls that modify
+earlier rules.
+
+**CC-BY-SA is now allowed (was CC0-only, ADR-0011/ROADMAP Phase 5).** The player and NPC
+characters are built from **LPC** (Liberated Pixel Cup) sprites — CC-BY-SA 3.0 / GPL 3.0.
+That is copyleft, not public domain: attribution ships in `apps/game/CREDITS.md` and
+derivatives of the art stay under the same licenses. The trade was deliberate — LPC is the
+nearest *free* path to the SNES-JRPG look the owner asked for, and CC0 alone could not
+reach it. Everything else stays CC0/our own.
+
+**Real external pixel art bypasses `processArt` and the Asset Studio gate, on purpose.**
+That pipeline pixelizes and quantizes to a *locked palette* — it exists to make OUR
+placeholder and gpt-image art cohere. Running finished LPC art through it would wreck it.
+So LPC loads directly from `apps/game/public/assets`; the gate still owns everything that
+goes into the asset database. (Asset Studio's `import` already records a `--license`, so a
+CC-BY-SA asset that ever *did* need the database has a home; nothing does today.)
+
+**Ground and objects are generated, not a bought tileset.** Areas are authored at runtime
+and the World Writer picks each tile's colour for mood (and the Reunion seam, ADR-0020), so
+a fixed atlas would fight that. `apps/game/src/tiles.ts` and `sprites.ts` synthesise a
+pixel texture per tile/prop/item from the entity's *own* colour, pattern chosen by
+`artTag`/name keyword. Pattern gives detail; the Director's colour keeps intent; every
+generated thing renders with no atlas to map.
+
+**Portraits are gpt-image, capped and cached (extends ADR-0011 source #3).** The dialogue
+box shows a character portrait from `GET /api/portrait`, generated once, chroma-keyed,
+quantized to that path's palette, and content-hash cached forever. Spend is capped per
+server run (`HOWEVERFAR_PORTRAIT_BUDGET_USD`, default $2) with a free procedural fallback
+past the cap, on `HOWEVERFAR_PORTRAITS=off`, or on any failure — the always-something-on-
+screen rule outranks the budget. This is the one place the zero-spend rule is relaxed by
+owner approval, and it is bounded and opt-outable.
