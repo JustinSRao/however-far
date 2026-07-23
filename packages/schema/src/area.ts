@@ -172,5 +172,11 @@ export const AreaAction = z.discriminatedUnion("type", [
   z.object({ type: z.literal("convoChoice"), entityId: Slug, choiceId: Slug }),
   z.object({ type: z.literal("portal"), portalId: Slug }),
   z.object({ type: z.literal("freeText"), text: z.string().min(1).max(500) }),
+  /**
+   * The player is walking toward this portal. Not a state change — a hint that
+   * lets the Director start writing what is beyond it before they arrive
+   * (Phase 6 latency). Safe to ignore, safe to send more than once.
+   */
+  z.object({ type: z.literal("approach"), portalId: Slug }),
 ]);
 export type AreaAction = z.infer<typeof AreaAction>;

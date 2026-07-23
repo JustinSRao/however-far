@@ -22,11 +22,21 @@ import {
   createWorldArc,
   extractAreaFacts,
   writeArea,
+  type WriteAreaResult,
 } from "./worldWriter.js";
 import type { WorldWriterContext } from "./worldPrompts.js";
 
 /** Accepted areas without beat progress before the Architect revises the arc. */
 const DRIFT_THRESHOLD = 3;
+
+/**
+ * Hard cap on speculative area writes per session (Phase 6 latency vs ADR-0013
+ * zero-spend). Speculation buys back the ~3 minute crossing measured in the
+ * Phase 4 go/no-go, but every speculation the player walks away from is money
+ * spent on an area nobody reads — so it is approach-triggered (the client only
+ * asks when the player is walking at a door) and capped.
+ */
+const MAX_SPECULATIONS = Number(process.env["HOWEVERFAR_MAX_SPECULATIONS"] ?? 12);
 
 /** Stable 32-bit seed from a session id — same session, same dice, forever. */
 function seedFromId(id: string): number {
@@ -91,6 +101,41 @@ export class WorldDirector {
     };
   }
 
+  /**
+   * Areas written ahead of the player, keyed `${areaId}/${portalId}`. Held in
+   * memory only: a speculation is tied to the exact state it was written
+   * against, so it must not outlive the process or be persisted into a save.
+   */
+  private speculations = new Map<string, Promise<WriteAreaResult>>();
+  private speculationCount = 0;
+
+  /**
+   * The player is walking toward a portal — start writing what is beyond it.
+   * Fire-and-forget: failures are swallowed here and retried for real if the
+   * player actually steps through.
+   */
+  approach(portalId: string): void {
+    if (this.session.phase !== "generated") return;
+    if (this.speculationCount >= MAX_SPECULATIONS) return;
+
+    const area = this.currentArea();
+    const portal = area.portals.find((p) => p.id === portalId);
+    if (!portal || portal.transition.type !== "generate") return;
+
+    const key = `${area.id}/${portalId}`;
+    if (this.speculations.has(key)) return;
+
+    this.speculationCount++;
+    this.log(`speculating past "${portal.label}" (${this.speculationCount}/${MAX_SPECULATIONS})`);
+    const pending = writeArea(this.model, this.writerContext(portal.transition.hint), {
+      log: this.log,
+    });
+    // Attach a catch so an early rejection never becomes an unhandled
+    // rejection; the stored promise keeps the original outcome.
+    pending.catch(() => undefined);
+    this.speculations.set(key, pending);
+  }
+
   getSession(): AreaSessionSave {
     return structuredClone(this.session);
   }
@@ -139,6 +184,11 @@ export class WorldDirector {
           portal?.id,
         );
       }
+      case "approach": {
+        // The engine echoes the portal id back, so no narrowing on `action`.
+        this.approach(outcome.portalId);
+        return { kind: "ok", state: this.session.state };
+      }
       case "freeText": {
         // Free text is a profiling signal everywhere; a generation trigger
         // only after the prologue (and that arrives with streaming, Phase 6).
@@ -149,7 +199,7 @@ export class WorldDirector {
   }
 
   private recordSignal(area: AreaSpec, action: AreaAction): void {
-    const describe = (): { kind: "choice" | "freeText" | "interact" | "portal"; text: string } => {
+    const describe = (): { kind: "choice" | "freeText" | "interact" | "portal"; text: string } | undefined => {
       switch (action.type) {
         case "interact": {
           const e = area.entities.find((x) => x.id === action.entityId);
@@ -169,10 +219,15 @@ export class WorldDirector {
         }
         case "freeText":
           return { kind: "freeText", text: action.text };
+        case "approach":
+          // Not a play signal — walking near a door says nothing about the
+          // player, and recording it would skew the profile.
+          return undefined;
       }
     };
-    const { kind, text } = describe();
-    this.session.signals.push({ sceneId: area.id, kind, action: text });
+    const described = describe();
+    if (!described) return;
+    this.session.signals.push({ sceneId: area.id, kind: described.kind, action: described.text });
   }
 
   private async followTransition(
@@ -198,7 +253,7 @@ export class WorldDirector {
           }
           await this.commitPathChoice(path);
         }
-        return this.generateNextArea(t.hint);
+        return this.generateNextArea(t.hint, portalId);
       }
       case "ending": {
         if (!this.session.arc || !isFinalAct(this.session.arc)) {
@@ -270,12 +325,40 @@ export class WorldDirector {
     };
   }
 
-  private async generateNextArea(hint: string): Promise<WorldTurnResult> {
-    const result = await writeArea(this.model, this.writerContext(hint), {
-      log: this.log,
-    });
+  private async generateNextArea(
+    hint: string,
+    portalId?: string,
+  ): Promise<WorldTurnResult> {
+    const result = await this.claimSpeculation(portalId) ??
+      (await writeArea(this.model, this.writerContext(hint), { log: this.log }));
     await this.acceptArea(result.area, result.advancesBeatId);
     return { kind: "area", area: result.area, state: this.session.state };
+  }
+
+  /**
+   * Take the area written ahead for this portal, if there is one. A
+   * speculation that failed is discarded silently — the caller writes it for
+   * real — and is not retried, since the same context would fail again.
+   */
+  private async claimSpeculation(
+    portalId: string | undefined,
+  ): Promise<WriteAreaResult | undefined> {
+    if (!portalId) return undefined;
+    const key = `${this.session.state.currentAreaId}/${portalId}`;
+    const pending = this.speculations.get(key);
+    if (!pending) return undefined;
+    this.speculations.delete(key);
+    try {
+      const result = await pending;
+      // Two portals can be speculated and both land on the same id; only the
+      // first one through is usable.
+      if (this.session.areas[result.area.id]) return undefined;
+      this.log(`used speculation for "${key}" — no wait at the threshold`);
+      return result;
+    } catch {
+      this.log(`speculation for "${key}" failed; writing it for real`);
+      return undefined;
+    }
   }
 
   private async acceptArea(area: AreaSpec, advancesBeatId?: string): Promise<void> {

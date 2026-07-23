@@ -144,8 +144,14 @@ Goal: both paths playable start → threshold ending, feeling like a real game.
       branches. Quest log in the client HUD
 - [ ] Recurring characters: canonical visual descriptions in canon → stable art via the
       asset DB; companions/antagonists that persist and develop across the playthrough
-- [ ] Latency: speculative generation of adjacent areas, streamed dialogue, in-fiction
-      masking; art always placeholder-first
+- [~] Latency: **speculative generation done** — the client announces when the player
+      walks within 4 tiles of a generate-portal (`approach` action), and the Director
+      starts writing what is beyond it; stepping through reuses the work instead of
+      waiting. Approach-triggered rather than speculate-every-portal because every
+      unused speculation is money spent on an area nobody reads (ADR-0013); capped per
+      session via `HOWEVERFAR_MAX_SPECULATIONS`, asked once per door, never during the
+      prologue, and never recorded as a play signal. Failed speculations fall back to
+      writing for real. *Remaining: streamed dialogue and in-fiction masking*
 - [ ] **Path B meta-effects (`metaFx`, ADR-0015):** the DSL vocabulary for diegetic
       interface corruption — missing portraits, rewriting save labels, vanishing
       dialogue-log entries — sandboxed, non-destructive, engine-mediated

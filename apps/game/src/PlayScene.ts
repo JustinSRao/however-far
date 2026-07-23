@@ -24,6 +24,8 @@ import * as ui from "./ui.js";
 
 export const TILE = 48;
 const MOVE_MS = 140;
+/** How close the player gets before we ask the server to write what is beyond. */
+const APPROACH_RADIUS = 4;
 
 const PATH_LABEL: Record<SaveInfo["path"], string> = {
   shared: "the prologue",
@@ -50,6 +52,8 @@ export class PlayScene extends Phaser.Scene {
   private entityLayer!: Phaser.GameObjects.Container;
   private moving = false;
   private menu: readonly { key: string; label: string; action: () => void }[] | undefined;
+  /** `${areaId}/${portalId}` already announced, so each door is asked for once. */
+  private announced = new Set<string>();
   private keys!: Record<"W" | "A" | "S" | "D" | "UP" | "LEFT" | "DOWN" | "RIGHT", Phaser.Input.Keyboard.Key>;
 
   constructor() {
@@ -132,6 +136,8 @@ export class PlayScene extends Phaser.Scene {
     if (this.moving || ui.panelState().mode !== "closed" || ui.veilOpen() || ui.sayOpen())
       return;
 
+    this.announceNearbyPortals();
+
     const dir = this.heldDirection();
     if (!dir) return;
     const before = this.world.state;
@@ -148,6 +154,27 @@ export class PlayScene extends Phaser.Scene {
           this.moving = false;
         },
       });
+    }
+  }
+
+  /**
+   * Tell the server when the player is walking at a door it would have to
+   * write, so generation starts before they arrive (Phase 6 latency). Sent
+   * once per door: the server caps how much it will speculate, and a player
+   * pacing back and forth should not spend the budget.
+   */
+  private announceNearbyPortals(): void {
+    const w = this.world;
+    if (!w || this.session.mode !== "server") return;
+    for (const portal of w.area.portals) {
+      if (portal.transition.type !== "generate") continue;
+      const distance =
+        Math.abs(portal.pos.x - w.state.pos.x) + Math.abs(portal.pos.y - w.state.pos.y);
+      if (distance > APPROACH_RADIUS) continue;
+      const key = `${w.area.id}/${portal.id}`;
+      if (this.announced.has(key)) continue;
+      this.announced.add(key);
+      this.mirror({ type: "approach", portalId: portal.id });
     }
   }
 
@@ -311,6 +338,7 @@ export class PlayScene extends Phaser.Scene {
 
   private buildArea(): void {
     if (!this.world) return;
+    this.announced.clear();
     const area = this.world.area;
     this.mapLayer?.destroy();
     this.entityLayer?.destroy();

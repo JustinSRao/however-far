@@ -331,7 +331,8 @@ export type AreaActionOutcome =
   | { kind: "interaction"; outcome: InteractionOutcome }
   | { kind: "convo"; outcome: ConvoChoiceOutcome }
   | { kind: "portal"; outcome: PortalOutcome }
-  | { kind: "freeText"; state: AreaGameState; text: string };
+  | { kind: "freeText"; state: AreaGameState; text: string }
+  | { kind: "approach"; state: AreaGameState; portalId: string };
 
 /** Uniform entry point mirroring the v0 engine's applyAction. */
 export function applyAreaAction(
@@ -351,6 +352,10 @@ export function applyAreaAction(
       return { kind: "portal", outcome: takePortal(state, area, action.portalId) };
     case "freeText":
       return { kind: "freeText", state, text: action.text };
+    case "approach": {
+      // Purely advisory: it changes nothing, so an unknown portal is harmless.
+      return { kind: "approach", state, portalId: action.portalId };
+    }
   }
 }
 
