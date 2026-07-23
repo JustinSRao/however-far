@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { OPENAI_MODELS, type RoleConfig } from "./config.js";
+import { recordUsage, roleNameOf } from "./costs.js";
 import { ModelOutputError, type ModelClient, type StructuredRequest } from "./modelClient.js";
 import { stripNulls, toOpenAISchema, unwrapRoot } from "./openaiSchema.js";
 
@@ -45,6 +46,22 @@ export class OpenAIModelClient implements ModelClient {
         json_schema: { name: "howeverfar_output", strict: true, schema },
       },
       messages,
+    });
+
+    // Cost ledger (ADR-0018): every call is recorded, tokens as ground truth.
+    const usage = response.usage;
+    const cached = usage?.prompt_tokens_details?.cached_tokens ?? 0;
+    recordUsage({
+      provider: "openai",
+      // The configured id, not response.model (which may carry a date suffix
+      // that would miss the PRICING table).
+      model: OPENAI_MODELS[req.role.tier],
+      role: roleNameOf(req.role),
+      kind: "text",
+      inputTokens: Math.max(0, (usage?.prompt_tokens ?? 0) - cached),
+      cachedInputTokens: cached,
+      cacheWriteTokens: 0,
+      outputTokens: usage?.completion_tokens ?? 0,
     });
 
     const choice = response.choices[0];

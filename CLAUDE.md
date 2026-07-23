@@ -52,6 +52,11 @@ encodes the project's invariants.
 11. **Path B interface tricks are sandboxed (ADR-0015).** Diegetic "corruption" only
     ever touches the game's own UI/data directory, is never actually destructive, and
     is DSL-mediated — never improvised at the UI layer.
+12. **Every external API call lands in the cost ledger (ADR-0018).** The ModelClient
+    adapters record automatically; any new paid-API call path (image providers
+    included) must record via `recordUsage` in `packages/director/src/costs.ts`.
+    A call missing from the ledger is a bug. Report: `npm run costs -w
+    @howeverfar/director`.
 
 ## Model API usage (for Director code)
 

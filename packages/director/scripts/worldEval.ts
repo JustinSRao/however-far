@@ -1,4 +1,5 @@
 import { validateAreaIntegrity } from "@howeverfar/engine";
+import { readCostLedger } from "../src/costs.js";
 import { createModelClient, loadEnv } from "../src/createModelClient.js";
 import { WorldDirector } from "../src/worldDirector.js";
 
@@ -42,6 +43,7 @@ function at(
 
 async function main(): Promise<void> {
   console.log(`world eval — path: ${path}\n`);
+  const ledgerBefore = readCostLedger().length;
   let director = new WorldDirector({ model: model!, log });
 
   // Scripted prologue beats (the Profiler's raw material).
@@ -109,6 +111,13 @@ async function main(): Promise<void> {
   }
   console.log(`\ncanon facts: ${session.canon.length}`);
   console.log(`integrity: ${problems.length === 0 ? "clean" : problems.join("; ")}`);
+
+  // Cost of this run, from the ledger (ADR-0018).
+  const runEvents = readCostLedger().slice(ledgerBefore);
+  const runUsd = runEvents.reduce((sum, e) => sum + (e.costUsd ?? 0), 0);
+  console.log(
+    `cost: ${runEvents.length} API calls · $${runUsd.toFixed(4)} (npm run costs for the full ledger)`,
+  );
 
   const namingOk = named.every((e) => !!e.nameMeaning);
   if (problems.length === 0 && session.phase === "generated" && namingOk) {

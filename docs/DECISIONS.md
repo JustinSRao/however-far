@@ -289,3 +289,27 @@ registers, -senpai/-sensei roles, -sama/-dono in the fantasy court, yobisute for
 family/lovers/close friends), family-name-first social distance, and **address shifts
 treated as story beats recorded in canon**. The World Writer prompt carries a compressed
 version of these rules.
+
+## ADR-0018: Every API call is recorded in the cost ledger
+
+**Status:** Accepted · 2026-07-22 · owner directive
+
+**Every** external model/image API call — Director stages today, gpt-image-2 asset
+generation when Phase 5 lands, anything after — is recorded to a persistent ledger
+(`HOWEVERFAR_HOME/costs.jsonl`, one JSON line per call: timestamp, provider, model,
+Director role, raw token counts, derived USD cost). The goal is a cost mockup of the
+entire game: cost per crossing, per area, per playthrough, per asset.
+
+Mechanics: the two `ModelClient` adapters record automatically inside
+`generateStructured`, so no Director call site can forget; `packages/director/src/costs.ts`
+owns the pricing table (prices verified 2026-07-22 — gpt-5.5 $5/$30, gpt-5.4-mini
+$0.75/$4.50, claude-opus-4-8 $5/$25, claude-haiku-4-5 $1/$5 per MTok; cached input ~0.1×)
+and the ledger IO. **Tokens are the ground truth** — unknown models record with
+`costUsd: null`, and `npm run costs -w @howeverfar/director` reports both recorded and
+recomputed-at-current-prices totals, broken down by model/role/day. Recording is
+best-effort and never breaks play. `eval:world` prints each run's call count and cost.
+
+**Consequence:** any NEW code path that calls an external paid API must either go
+through an instrumented adapter or call `recordUsage` itself — a call that doesn't land
+in the ledger is a bug. (The pre-existing text-era eval runs and the first Phase 4
+go/no-go run predate the ledger and are not in it.)

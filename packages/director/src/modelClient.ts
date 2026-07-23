@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import type { z } from "zod";
 import type { RoleConfig } from "./config.js";
+import { recordUsage, roleNameOf } from "./costs.js";
 
 /**
  * The seam between the Director and the Claude API. Everything above this
@@ -68,6 +69,18 @@ export class AnthropicModelClient implements ModelClient {
       },
       messages,
     });
+    // Cost ledger (ADR-0018): every call is recorded, tokens as ground truth.
+    recordUsage({
+      provider: "anthropic",
+      model: req.role.model,
+      role: roleNameOf(req.role),
+      kind: "text",
+      inputTokens: response.usage.input_tokens,
+      cachedInputTokens: response.usage.cache_read_input_tokens ?? 0,
+      cacheWriteTokens: response.usage.cache_creation_input_tokens ?? 0,
+      outputTokens: response.usage.output_tokens,
+    });
+
     const parsed: unknown = (response as { parsed_output?: unknown }).parsed_output;
     if (parsed == null) {
       throw new ModelOutputError(

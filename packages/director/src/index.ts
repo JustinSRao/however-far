@@ -28,6 +28,17 @@ export {
   type OpenAISchema,
 } from "./openaiSchema.js";
 export { CanonLedger } from "./canonLedger.js";
+export {
+  computeCostUsd,
+  costLedgerPath,
+  PRICING,
+  readCostLedger,
+  recordUsage,
+  roleNameOf,
+  type PriceEntry,
+  type TokenUsage,
+  type UsageEvent,
+} from "./costs.js";
 export { Director, type DirectorOptions, type TurnResult } from "./director.js";
 export { writeScene, WriterOutput, WriterFailedError } from "./writer.js";
 export {
