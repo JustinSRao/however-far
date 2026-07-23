@@ -4,6 +4,7 @@
  */
 export {
   applyConvoChoice,
+  choiceAffordable,
   enterArea,
   initialAreaState,
   interactionUsed,
@@ -11,6 +12,7 @@ export {
   reachableEntities,
   runInteraction,
   tryMove,
+  type CheckResult,
   type Direction,
   type InteractionOutcome,
 } from "@howeverfar/engine";

@@ -28,6 +28,15 @@ import type { WorldWriterContext } from "./worldPrompts.js";
 /** Accepted areas without beat progress before the Architect revises the arc. */
 const DRIFT_THRESHOLD = 3;
 
+/** Stable 32-bit seed from a session id — same session, same dice, forever. */
+function seedFromId(id: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < id.length; i++) {
+    h = Math.imul(h ^ id.charCodeAt(i), 16777619);
+  }
+  return h >>> 0;
+}
+
 const PROLOGUE_FREETEXT_ACK =
   "The moment takes what you did and keeps it. But this evening was already written before you lived it — and for now, it holds.";
 
@@ -72,7 +81,9 @@ export class WorldDirector {
       updatedAt: now,
       phase: "prologue",
       path: "shared",
-      state: initialAreaState(entry),
+      // Seeded from the session id so every playthrough rolls its own dice,
+      // while a given session replays identically from its action log.
+      state: initialAreaState(entry, seedFromId(id)),
       areas: Object.fromEntries(areas.map((a) => [a.id, a])),
       signals: [],
       canon: [],

@@ -394,3 +394,46 @@ locks them against real gameplay. That stays cheap: every art source is committe
 and the whole database re-gates. Sprite-as-data specs embed their own palette, so any
 palette swap should regenerate them too, or their colours merely snap to the nearest
 new entry.
+
+## ADR-0021: One ruleset, emphasized per path — checks are the only mechanic
+
+**Status:** Accepted · 2026-07-22
+
+ROADMAP asked: *"Do the two paths share one engine ruleset with different emphasis, or
+grow path-specific rule modules?"* **One ruleset.**
+
+Her path is exploration/magic/combat/survival/factions; his is investigation/dialogue/
+relationships/memory/evidence. Those look like different games, but mechanically they
+are the same contest: spend a resource, test an attribute against a difficulty, change
+the world whichever way it lands. What differs is vocabulary and emphasis, and that is
+the Director's job, not the engine's.
+
+The decider is **the Reunion** (Phase 7): it merges one completed playthrough of each
+path into a single finale. Two divergent rule modules would make that a reconciliation
+problem — whose stats survive, how do they map — instead of a merge. A shared sheet
+means both playthroughs arrive already speaking the same language.
+
+**The sheet.** Three attributes (`might`, `wits`, `heart`) and two pools (`vigor`,
+`focus`), fixed at development time so the DSL stays closed-world (ADR-0001). They are
+deliberately abstract enough to read on both sides: `might` is a sword swing for Suzune
+and the nerve to knock on a stranger's door for Itsuki; `focus` is her mana and his
+clarity. Standings cover factions (her) and relationships (his) with identical
+bookkeeping. Both protagonists start with `heart` highest — not balance, but the story:
+the spine is a bond, her dormant power runs on it, his whole path is refusing to let go.
+
+**Checks are the only mechanic.** There is no separate combat system, and there will
+not be one. A fight is a run of checks; so is an interrogation, a spell, a search of a
+room. A d6 plus the attribute against a difficulty of 1–10, with an optional cost spent
+whether or not it lands. This keeps the engine small and pure, and spends the Director's
+intelligence on fiction instead of rules — which is the whole architecture (ADR-0002).
+
+Randomness is seeded from the session id and indexed by a counter, using a finalizing
+integer hash rather than a sequential PRNG, so check #7 does not depend on whether
+checks #1–6 ever happened. A session replays identically from its action log even when
+the Director's retries changed how many checks were *offered*.
+
+**Consequence:** the prompt tells the World Writer that failure must be interesting —
+a failed check moves the story sideways, never backwards, and never resolves to
+"nothing happens". A mechanic that can only stall is worse than no mechanic.
+`AreaEffect` supersedes `Effect` inside the Area DSL as a superset; the legacy text-era
+engine keeps the smaller union it already exhaustively handles.

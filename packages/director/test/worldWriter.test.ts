@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AreaGameState, CanonFact } from "@howeverfar/schema";
+import { STARTING_SHEET } from "@howeverfar/schema";
 import { toOpenAISchema } from "../src/openaiSchema.js";
 import { WorldWriterOutput, writeArea, WorldWriterFailedError } from "../src/worldWriter.js";
 import { WORLD_WRITER_SYSTEM, type WorldWriterContext } from "../src/worldPrompts.js";
@@ -54,6 +55,8 @@ function makeCtx(overrides: Partial<WorldWriterContext> = {}): WorldWriterContex
     flags: { "suzune-vanished": true },
     inventory: [],
     visitedAreaIds: ["prologue-street", "prologue-crossing"],
+    sheet: STARTING_SHEET,
+    rng: { seed: 1, counter: 0 },
     usedInteractions: [],
   };
   return {

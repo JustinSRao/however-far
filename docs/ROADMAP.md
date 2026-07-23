@@ -130,9 +130,11 @@ Goal: a large, coherent, growing pixel-art database, operable by agents (ADR-001
 
 Goal: both paths playable start → threshold ending, feeling like a real game.
 
-- [ ] Mechanics per path, tuned by profiling: her path — magic/combat/exploration
-      systems; his path — investigation/evidence/relationship systems. All as DSL +
-      engine rules (development-time), emphasized per player by the Director
+- [x] Mechanics per path (ADR-0021): **one ruleset, emphasized per path** — a character
+      sheet (might/wits/heart, vigor/focus, standings) and a single `check` primitive
+      that is combat on her side and investigation on his. Seeded per session so a
+      playthrough replays identically. DSL + pure engine rules + client HUD; the World
+      Writer prompt teaches it, including "failure must be interesting"
 - [ ] Quest structure: generated quests with objectives, tracking, and payoffs planted
       by the Architect
 - [ ] Recurring characters: canonical visual descriptions in canon → stable art via the
@@ -163,10 +165,12 @@ Goal: both paths playable start → threshold ending, feeling like a real game.
 
 ## Open questions (revisit each phase)
 
-- How much mechanical depth does the DSL support vs. narrative resolution? (Now urgent:
-  Phase 6 needs real systems.)
-- Do the two paths share one engine ruleset with different emphasis, or grow
-  path-specific rule modules?
+- How much mechanical depth does the DSL support vs. narrative resolution? (Answered
+  for now by ADR-0021: one check primitive, no bespoke systems. Revisit if play proves
+  it too thin.)
+- ~~Do the two paths share one engine ruleset with different emphasis, or grow
+  path-specific rule modules?~~ **Answered: one ruleset (ADR-0021), for the Reunion's
+  sake.**
 - Reunion matchmaking: how do two players find each other? (Friends-first? Codes?)
 - Multiplayer hosting under the zero-spend rule (self-hosted from the owner's machine?
   free tiers?) — the hard open question of Phase 7.

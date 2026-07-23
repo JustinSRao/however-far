@@ -1,15 +1,23 @@
 import type {
   AreaAction,
+  AreaEffect,
   AreaGameState,
   AreaSpec,
   AreaTransition,
   ConvoChoice,
   DialogueLine,
-  Effect,
   GridPos,
   PlacedEntity,
 } from "@howeverfar/schema";
+import { STARTING_SHEET } from "@howeverfar/schema";
 import { EngineError } from "./index.js";
+import {
+  applySheetEffects,
+  canAttemptCheck,
+  isSheetEffect,
+  resolveCheckOn,
+  type CheckResult,
+} from "./mechanics.js";
 
 /**
  * Area engine (DSL v1) — pure rules for the top-down RPG (ADR-0009/0010).
@@ -26,12 +34,7 @@ const DELTA: Record<Direction, { dx: number; dy: number }> = {
   right: { dx: 1, dy: 0 },
 };
 
-interface EffectBag {
-  flags: Record<string, boolean>;
-  inventory: Array<{ item: string; name: string }>;
-}
-
-function applyEffectBag<S extends EffectBag>(state: S, effect: Effect): S {
+function applyOneEffect(state: AreaGameState, effect: AreaEffect): AreaGameState {
   switch (effect.op) {
     case "setFlag":
       return { ...state, flags: { ...state.flags, [effect.key]: effect.value } };
@@ -46,14 +49,17 @@ function applyEffectBag<S extends EffectBag>(state: S, effect: Effect): S {
         ...state,
         inventory: state.inventory.filter((i) => i.item !== effect.item),
       };
+    default:
+      // Mechanical ops (Phase 6) live on the character sheet.
+      return { ...state, sheet: applySheetEffects(state.sheet, [effect]) };
   }
 }
 
 export function applyAreaEffects(
   state: AreaGameState,
-  effects: readonly Effect[],
+  effects: readonly AreaEffect[],
 ): AreaGameState {
-  return effects.reduce(applyEffectBag, state);
+  return effects.reduce(applyOneEffect, state);
 }
 
 function inBounds(area: AreaSpec, x: number, y: number): boolean {
@@ -96,8 +102,12 @@ export function enterArea(state: AreaGameState, area: AreaSpec): AreaGameState {
   );
 }
 
-/** State for a brand-new playthrough entering its first area. */
-export function initialAreaState(firstArea: AreaSpec): AreaGameState {
+/**
+ * State for a brand-new playthrough entering its first area. `seed` fixes every
+ * check this playthrough will ever roll, so a session replays identically from
+ * its action log; callers that want variety per session pass a fresh one.
+ */
+export function initialAreaState(firstArea: AreaSpec, seed = 1): AreaGameState {
   return enterArea(
     {
       currentAreaId: firstArea.id,
@@ -107,6 +117,8 @@ export function initialAreaState(firstArea: AreaSpec): AreaGameState {
       inventory: [],
       visitedAreaIds: [],
       usedInteractions: [],
+      sheet: STARTING_SHEET,
+      rng: { seed, counter: 0 },
     },
     firstArea,
   );
@@ -219,9 +231,20 @@ export interface ConvoChoiceOutcome {
   state: AreaGameState;
   reply?: string;
   transition?: AreaTransition;
+  /** Present when the choice carried a check (Phase 6). */
+  check?: CheckResult;
 }
 
-/** Apply a conversation choice: its effects, then surface reply/transition. */
+/** Choices the player cannot currently afford — the UI should show them locked. */
+export function choiceAffordable(state: AreaGameState, choice: ConvoChoice): boolean {
+  return choice.check === undefined || canAttemptCheck(state.sheet, choice.check);
+}
+
+/**
+ * Apply a conversation choice: its own effects, then — if it is a gamble — the
+ * check, whose cost is spent either way and whose winning branch supplies more
+ * effects. Reply and transition surface for the caller to present.
+ */
 export function applyConvoChoice(
   state: AreaGameState,
   area: AreaSpec,
@@ -237,10 +260,28 @@ export function applyConvoChoice(
   if (!choice) {
     throw new EngineError(`entity "${entityId}" has no choice "${choiceId}"`);
   }
-  const next = applyAreaEffects(state, choice.effects);
+  let next = applyAreaEffects(state, choice.effects);
+
+  let checkResult: CheckResult | undefined;
+  if (choice.check) {
+    if (!canAttemptCheck(next.sheet, choice.check)) {
+      throw new EngineError(
+        `choice "${choiceId}" needs ${choice.check.cost?.amount} ${choice.check.cost?.resource} and the player cannot pay it`,
+      );
+    }
+    const resolved = resolveCheckOn(next, choice.check);
+    checkResult = resolved.result;
+    // The sheet half is already folded in; flags/inventory still need applying.
+    next = applyAreaEffects(
+      resolved.state,
+      resolved.result.effects.filter((e) => !isSheetEffect(e)),
+    );
+  }
+
   const outcome: ConvoChoiceOutcome = { state: next };
   if (choice.reply !== undefined) outcome.reply = choice.reply;
   if (choice.transition !== undefined) outcome.transition = choice.transition;
+  if (checkResult !== undefined) outcome.check = checkResult;
   return outcome;
 }
 

@@ -1,5 +1,12 @@
 import { z } from "zod";
-import { ArtRequest, DialogueLine, Effect, EndingTone, Slug } from "./scene.js";
+import { ArtRequest, DialogueLine, EndingTone, Slug } from "./scene.js";
+import {
+  AreaEffect,
+  Check,
+  CharacterSheet,
+  RngState,
+  STARTING_SHEET,
+} from "./mechanics.js";
 
 /**
  * Area DSL v1 — the contract for the top-down RPG (ADR-0009/0010).
@@ -54,7 +61,13 @@ export const ConvoChoice = z.object({
   label: z.string().min(1).max(200),
   /** The speaker's response when this choice is picked. */
   reply: z.string().min(1).max(500).optional(),
-  effects: z.array(Effect).max(10).default([]),
+  effects: z.array(AreaEffect).max(10).default([]),
+  /**
+   * Makes this choice a gamble (Phase 6). The engine resolves it, spends the
+   * cost, and applies the winning branch's effects; `reply` still shows first,
+   * so the fiction reads "you try" then "here is what happened".
+   */
+  check: Check.optional(),
   transition: AreaTransition.optional(),
 });
 export type ConvoChoice = z.infer<typeof ConvoChoice>;
@@ -69,7 +82,7 @@ export const Interaction = z.object({
   lines: z.array(DialogueLine).max(30).default([]),
   choices: z.array(ConvoChoice).max(4).default([]),
   /** Applied by the engine when the interaction first runs. */
-  effects: z.array(Effect).max(10).default([]),
+  effects: z.array(AreaEffect).max(10).default([]),
   /** If true, lines/choices/effects fire once; afterwards `afterText` shows. */
   once: z.boolean().default(false),
   afterText: z.string().min(1).max(300).optional(),
@@ -121,7 +134,7 @@ export const AreaSpec = z.object({
   playerSpawn: GridPos,
   entities: z.array(PlacedEntity).max(24).default([]),
   portals: z.array(Portal).min(1).max(8),
-  onEnterEffects: z.array(Effect).max(10).default([]),
+  onEnterEffects: z.array(AreaEffect).max(10).default([]),
 });
 export type AreaSpec = z.infer<typeof AreaSpec>;
 
@@ -135,6 +148,12 @@ export const AreaGameState = z.object({
   visitedAreaIds: z.array(Slug),
   /** `${areaId}/${entityId}` for interactions with once=true that have fired. */
   usedInteractions: z.array(z.string()),
+  /**
+   * Phase 6 mechanics. Defaulted rather than required so world-sessions saved
+   * before mechanics existed still load and simply start from the base sheet.
+   */
+  sheet: CharacterSheet.default(STARTING_SHEET),
+  rng: RngState.default({ seed: 1, counter: 0 }),
 });
 export type AreaGameState = z.infer<typeof AreaGameState>;
 

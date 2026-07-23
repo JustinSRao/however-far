@@ -1,0 +1,147 @@
+{
+  "dslVersion": 1,
+  "id": "school-records-office",
+  "name": "The Records Office",
+  "description": "Afternoon light comes through the blinds in flat bars. The office smells of toner and old paper. Somewhere down the corridor a club is tuning instruments, and the ordinariness of it is unbearable.",
+  "path": "his",
+  "width": 9,
+  "height": 7,
+  "tiles": [
+    { "id": "floor", "name": "linoleum floor", "walkable": true, "color": "#bcbfc2", "artTag": "paving-grey" },
+    { "id": "wall", "name": "office wall", "walkable": false, "color": "#8a8d92", "artTag": "concrete-wall" },
+    { "id": "counter", "name": "service counter", "walkable": false, "color": "#96703f", "artTag": "timber-wall" },
+    { "id": "shelf", "name": "records shelving", "walkable": false, "color": "#5e422a", "artTag": "timber-wall" }
+  ],
+  "ground": [
+    [1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 3, 3, 0, 0, 0, 3, 3, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 2, 2, 2, 0, 2, 2, 2, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 1, 1, 1, 0, 1, 1, 1, 1]
+  ],
+  "playerSpawn": { "x": 4, "y": 5 },
+  "entities": [
+    {
+      "id": "clerk-arakawa-shiori",
+      "name": "Arakawa Shiori",
+      "description": "The records clerk. She listens with her whole face, and she will not bend the archive by a single character.",
+      "role": "character",
+      "pos": { "x": 4, "y": 2 },
+      "color": "#c08f6a",
+      "nameMeaning": "荒川 (wild river) + 栞 (bookmark) — she keeps the place in the records while the current runs on regardless. Kind, and immovable.",
+      "interaction": {
+        "verb": "talk",
+        "lines": [
+          { "speakerId": "narrator", "text": "She looks up, and her expression is the one adults use for a student who has come to the wrong window." },
+          { "speakerId": "clerk-arakawa-shiori", "text": "Nemoto-kun, isn't it? You asked about this on Monday too." },
+          { "speakerId": "clerk-arakawa-shiori", "text": "There's no Tōyama in the second-year rolls. There's never been a Tōyama at this school." }
+        ],
+        "choices": [
+          {
+            "id": "press-records",
+            "label": "Ask her to pull the enrolment book itself, not the terminal.",
+            "reply": "She sighs, but she goes and gets it. Paper, not screen.",
+            "check": {
+              "attribute": "wits",
+              "difficulty": 5,
+              "cost": { "resource": "focus", "amount": 1 },
+              "success": {
+                "text": "The page for her class has thirty-one names and thirty-two desks in the seating diagram opposite. The mismatch is nothing. It is also the first nothing that has ever been on your side.",
+                "effects": [
+                  { "op": "setFlag", "key": "found-desk-discrepancy", "value": true },
+                  { "op": "addItem", "item": "seating-diagram", "name": "photocopied seating diagram" },
+                  { "op": "adjustAttribute", "attribute": "wits", "delta": 1 }
+                ]
+              },
+              "failure": {
+                "text": "Thirty-one names, thirty-one desks. You read it twice. The second time is worse, because you can feel yourself wanting the numbers to be wrong.",
+                "effects": [{ "op": "adjustResource", "resource": "vigor", "delta": -1 }]
+              }
+            }
+          },
+          {
+            "id": "tell-the-truth",
+            "label": "Tell her plainly: someone is missing, and you are the only one who remembers her.",
+            "reply": "You say it out loud, in a school office, in the afternoon.",
+            "check": {
+              "attribute": "heart",
+              "difficulty": 7,
+              "cost": { "resource": "vigor", "amount": 2 },
+              "success": {
+                "text": "She does not believe you. But she does not laugh, and she does not reach for the phone to call anyone about you. She says: come back on Thursday, when I'm on the desk alone.",
+                "effects": [
+                  { "op": "adjustStanding", "standing": "arakawa-shiori", "label": "Arakawa Shiori", "delta": 1 },
+                  { "op": "setFlag", "key": "shiori-will-listen", "value": true }
+                ]
+              },
+              "failure": {
+                "text": "Her face closes, gently, the way a door closes when someone is being careful not to slam it. She asks whether you've been sleeping. She means it kindly. That is the part that lands.",
+                "effects": [
+                  { "op": "adjustStanding", "standing": "arakawa-shiori", "label": "Arakawa Shiori", "delta": -1 },
+                  { "op": "adjustResource", "resource": "focus", "delta": -1 }
+                ]
+              }
+            }
+          },
+          {
+            "id": "withdraw",
+            "label": "Apologise for taking her time, and go.",
+            "reply": "\"Sorry. I know you're busy.\" It costs something to say it politely."
+          }
+        ]
+      }
+    },
+    {
+      "id": "enrolment-ledger",
+      "name": "enrolment ledger",
+      "description": "A hardbound book of admissions, spine cracked from twenty years of being right.",
+      "role": "prop",
+      "pos": { "x": 2, "y": 3 },
+      "color": "#d9c9a8",
+      "interaction": {
+        "verb": "examine",
+        "lines": [
+          { "speakerId": "narrator", "text": "You do not need to open it to know what it says. You open it anyway." }
+        ],
+        "choices": []
+      }
+    },
+    {
+      "id": "class-photo",
+      "name": "class photograph",
+      "description": "Last year's second-years on the gymnasium steps, framed and slightly crooked.",
+      "role": "prop",
+      "pos": { "x": 6, "y": 1 },
+      "color": "#eac6a2",
+      "interaction": {
+        "verb": "examine",
+        "once": true,
+        "lines": [
+          { "speakerId": "narrator", "text": "Third row, fourth from the left. You know exactly where she stood, because you were the one who told her to stop hiding behind Kurosawa." },
+          { "speakerId": "narrator", "text": "There is a girl there. She has Suzune's posture and someone else's face, and the caption gives her a name you have never heard." }
+        ],
+        "choices": [],
+        "effects": [
+          { "op": "setFlag", "key": "saw-replaced-photo", "value": true },
+          { "op": "adjustResource", "resource": "vigor", "delta": -1 },
+          { "op": "adjustAttribute", "attribute": "heart", "delta": 1 }
+        ],
+        "afterText": "You have looked at it once. You are not going to look at it again today."
+      }
+    }
+  ],
+  "portals": [
+    {
+      "id": "corridor",
+      "pos": { "x": 4, "y": 6 },
+      "label": "back into the corridor",
+      "transition": {
+        "type": "generate",
+        "hint": "The corridor outside the records office, mid-afternoon. Where Itsuki goes next depends on what he just learned; if he has the seating diagram he has somewhere to take it."
+      }
+    }
+  ],
+  "onEnterEffects": [{ "op": "setFlag", "key": "visited-records-office", "value": true }]
+}

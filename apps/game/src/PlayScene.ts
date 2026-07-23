@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import type { AreaSpec, PlacedEntity } from "@howeverfar/schema";
 import {
   applyConvoChoice,
+  choiceAffordable,
   interactionUsed,
   portalUnderPlayer,
   reachableEntities,
@@ -237,7 +238,10 @@ export class PlayScene extends Phaser.Scene {
     if (!w) return;
     const picked = ui.choiceAt(n);
     if (!picked) return;
-    const { state, reply } = applyConvoChoice(
+    // A gamble you cannot pay for is not offered — the engine would throw.
+    if (!choiceAffordable(w.state, picked.choice)) return;
+
+    const { state, reply, check } = applyConvoChoice(
       w.state,
       w.area,
       picked.entityId,
@@ -245,7 +249,10 @@ export class PlayScene extends Phaser.Scene {
     );
     this.world = { ...w, state };
     const speaker = w.area.entities.find((e) => e.id === picked.entityId)?.name ?? "";
-    if (reply !== undefined) ui.showReply(speaker, reply);
+    // A check's own prose is the real outcome, so it wins over the choice's
+    // reply when both exist.
+    const text = check ? check.text : reply;
+    if (text !== undefined) ui.showReply(speaker, text, check);
     else ui.closePanel();
     this.mirror({ type: "convoChoice", entityId: picked.entityId, choiceId: picked.choice.id });
   }
@@ -384,6 +391,8 @@ export class PlayScene extends Phaser.Scene {
   private updateHud(): void {
     const w = this.world;
     if (!w) return;
+    ui.setSheet(w.state.sheet);
+    ui.setAffordability((choice) => choiceAffordable(w.state, choice));
     let prompt = "wasd / arrows · move   t · speak";
     if (ui.veilOpen()) prompt = "";
     else if (ui.sayOpen()) prompt = "enter · say it   esc · never mind";
