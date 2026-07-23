@@ -57,6 +57,7 @@ function makeCtx(overrides: Partial<WorldWriterContext> = {}): WorldWriterContex
     visitedAreaIds: ["prologue-street", "prologue-crossing"],
     sheet: STARTING_SHEET,
     rng: { seed: 1, counter: 0 },
+    quests: [],
     usedInteractions: [],
   };
   return {

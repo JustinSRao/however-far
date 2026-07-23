@@ -135,8 +135,13 @@ Goal: both paths playable start → threshold ending, feeling like a real game.
       that is combat on her side and investigation on his. Seeded per session so a
       playthrough replays identically. DSL + pure engine rules + client HUD; the World
       Writer prompt teaches it, including "failure must be interesting"
-- [ ] Quest structure: generated quests with objectives, tracking, and payoffs planted
-      by the Architect
+- [x] Quest structure: `QuestDef` on an area (title, summary, 2-5 objectives, reward
+      effects) plus a log in game state. Declaring is not starting, so a job can be
+      offered and declined; the engine auto-completes and pays out when the last
+      objective lands, ignores repeats so rewards cannot be farmed, and writes status
+      before rewards so a reward looping back to its own quest terminates. Integrity
+      validation catches quest references anywhere in an area, including inside check
+      branches. Quest log in the client HUD
 - [ ] Recurring characters: canonical visual descriptions in canon → stable art via the
       asset DB; companions/antagonists that persist and develop across the playthrough
 - [ ] Latency: speculative generation of adjacent areas, streamed dialogue, in-fiction

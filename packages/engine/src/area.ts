@@ -18,6 +18,7 @@ import {
   resolveCheckOn,
   type CheckResult,
 } from "./mechanics.js";
+import { completeObjective, resolveQuest, startQuest } from "./quests.js";
 
 /**
  * Area engine (DSL v1) — pure rules for the top-down RPG (ADR-0009/0010).
@@ -34,7 +35,13 @@ const DELTA: Record<Direction, { dx: number; dy: number }> = {
   right: { dx: 1, dy: 0 },
 };
 
-function applyOneEffect(state: AreaGameState, effect: AreaEffect): AreaGameState {
+function applyOneEffect(
+  state: AreaGameState,
+  effect: AreaEffect,
+  area: AreaSpec | undefined,
+): AreaGameState {
+  const payReward = (s: AreaGameState, entry: { def: { reward: readonly AreaEffect[] } }) =>
+    applyAreaEffects(s, entry.def.reward, area);
   switch (effect.op) {
     case "setFlag":
       return { ...state, flags: { ...state.flags, [effect.key]: effect.value } };
@@ -49,17 +56,29 @@ function applyOneEffect(state: AreaGameState, effect: AreaEffect): AreaGameState
         ...state,
         inventory: state.inventory.filter((i) => i.item !== effect.item),
       };
+    case "questStart":
+      return startQuest(state, area, effect.questId);
+    case "questObjective":
+      return completeObjective(state, area, effect.questId, effect.objectiveId, payReward);
+    case "questResolve":
+      return resolveQuest(state, effect.questId, effect.status, payReward);
     default:
       // Mechanical ops (Phase 6) live on the character sheet.
       return { ...state, sheet: applySheetEffects(state.sheet, [effect]) };
   }
 }
 
+/**
+ * Apply effects in order. `area` is what lets `questStart` find a quest this
+ * area declares; effects resolved without one (a check's branch, say) can
+ * still advance quests already in the log.
+ */
 export function applyAreaEffects(
   state: AreaGameState,
   effects: readonly AreaEffect[],
+  area?: AreaSpec,
 ): AreaGameState {
-  return effects.reduce(applyOneEffect, state);
+  return effects.reduce((acc, effect) => applyOneEffect(acc, effect, area), state);
 }
 
 function inBounds(area: AreaSpec, x: number, y: number): boolean {
@@ -99,6 +118,7 @@ export function enterArea(state: AreaGameState, area: AreaSpec): AreaGameState {
       visitedAreaIds: visited,
     },
     area.onEnterEffects,
+    area,
   );
 }
 
@@ -119,6 +139,7 @@ export function initialAreaState(firstArea: AreaSpec, seed = 1): AreaGameState {
       usedInteractions: [],
       sheet: STARTING_SHEET,
       rng: { seed, counter: 0 },
+      quests: [],
     },
     firstArea,
   );
@@ -211,7 +232,7 @@ export function runInteraction(
       text: interaction.afterText ?? entity.description,
     };
   }
-  let next = applyAreaEffects(state, interaction.effects);
+  let next = applyAreaEffects(state, interaction.effects, area);
   if (interaction.once) {
     next = {
       ...next,
@@ -260,7 +281,7 @@ export function applyConvoChoice(
   if (!choice) {
     throw new EngineError(`entity "${entityId}" has no choice "${choiceId}"`);
   }
-  let next = applyAreaEffects(state, choice.effects);
+  let next = applyAreaEffects(state, choice.effects, area);
 
   let checkResult: CheckResult | undefined;
   if (choice.check) {
@@ -275,6 +296,7 @@ export function applyConvoChoice(
     next = applyAreaEffects(
       resolved.state,
       resolved.result.effects.filter((e) => !isSheetEffect(e)),
+      area,
     );
   }
 
@@ -416,6 +438,36 @@ export function validateAreaIntegrity(area: AreaSpec): string[] {
     }
   }
 
+  const questIds = new Set<string>();
+  for (const quest of area.quests) {
+    if (questIds.has(quest.id)) problems.push(`duplicate quest id "${quest.id}"`);
+    questIds.add(quest.id);
+    const objectiveIds = new Set<string>();
+    for (const objective of quest.objectives) {
+      if (objectiveIds.has(objective.id)) {
+        problems.push(`quest "${quest.id}" has duplicate objective id "${objective.id}"`);
+      }
+      objectiveIds.add(objective.id);
+    }
+  }
+  // A questStart can only name a quest this area declares — cross-area starts
+  // would have nowhere to read the definition from.
+  for (const effect of allEffectsIn(area)) {
+    if (effect.op === "questStart" && !questIds.has(effect.questId)) {
+      problems.push(
+        `effect starts quest "${effect.questId}", which this area does not declare`,
+      );
+    }
+    if (effect.op === "questObjective" && questIds.has(effect.questId)) {
+      const quest = area.quests.find((q) => q.id === effect.questId);
+      if (quest && !quest.objectives.some((o) => o.id === effect.objectiveId)) {
+        problems.push(
+          `quest "${effect.questId}" has no objective "${effect.objectiveId}"`,
+        );
+      }
+    }
+  }
+
   const portalIds = new Set<string>();
   for (const portal of area.portals) {
     if (portalIds.has(portal.id)) problems.push(`duplicate portal id "${portal.id}"`);
@@ -428,4 +480,22 @@ export function validateAreaIntegrity(area: AreaSpec): string[] {
   }
 
   return problems;
+}
+
+/** Every effect anywhere in an area — on-enter, interactions, choices, checks, rewards. */
+function allEffectsIn(area: AreaSpec): AreaEffect[] {
+  const out: AreaEffect[] = [...area.onEnterEffects];
+  for (const quest of area.quests) out.push(...quest.reward);
+  for (const entity of area.entities) {
+    const interaction = entity.interaction;
+    if (!interaction) continue;
+    out.push(...interaction.effects);
+    for (const choice of interaction.choices) {
+      out.push(...choice.effects);
+      if (choice.check) {
+        out.push(...choice.check.success.effects, ...choice.check.failure.effects);
+      }
+    }
+  }
+  return out;
 }

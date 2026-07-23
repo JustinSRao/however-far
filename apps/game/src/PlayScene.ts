@@ -392,6 +392,7 @@ export class PlayScene extends Phaser.Scene {
     const w = this.world;
     if (!w) return;
     ui.setSheet(w.state.sheet);
+    ui.setQuests(w.state.quests);
     ui.setAffordability((choice) => choiceAffordable(w.state, choice));
     let prompt = "wasd / arrows · move   t · speak";
     if (ui.veilOpen()) prompt = "";

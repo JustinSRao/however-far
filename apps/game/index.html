@@ -86,6 +86,22 @@
       #sheet .pool b { color: var(--accent); font-weight: normal; }
       #sheet .attrs { color: var(--dim); }
       #sheet .standing { color: var(--dim); }
+      #quests {
+        position: absolute;
+        top: 32px;
+        right: 12px;
+        max-width: 260px;
+        text-align: right;
+        font-family: ui-monospace, Consolas, monospace;
+        font-size: 12px;
+        color: var(--dim);
+        text-shadow: 0 1px 2px #000;
+        pointer-events: none;
+        line-height: 1.5;
+      }
+      #quests .qt { color: var(--accent); margin-top: 6px; }
+      #quests .qo { color: var(--text); }
+      #quests .qo.done { color: var(--dim); text-decoration: line-through; }
       #panel .roll {
         font-family: ui-monospace, Consolas, monospace;
         font-size: 12px;
@@ -164,6 +180,7 @@
         <span id="hud-prompt" class="prompt"></span>
       </div>
       <div id="sheet"></div>
+      <div id="quests"></div>
       <div id="panel"></div>
       <div id="say">
         <span class="mark">»</span>

@@ -1,4 +1,4 @@
-import type { CharacterSheet, ConvoChoice, DialogueLine } from "@howeverfar/schema";
+import type { CharacterSheet, ConvoChoice, DialogueLine, QuestEntry } from "@howeverfar/schema";
 import type { CheckResult } from "./deps.js";
 
 /**
@@ -12,6 +12,7 @@ const veil = document.getElementById("veil") as HTMLDivElement;
 const hudArea = document.getElementById("hud-area") as HTMLSpanElement;
 const hudPrompt = document.getElementById("hud-prompt") as HTMLSpanElement;
 const sheetEl = document.getElementById("sheet") as HTMLDivElement;
+const questsEl = document.getElementById("quests") as HTMLDivElement;
 const say = document.getElementById("say") as HTMLDivElement;
 const sayInput = document.getElementById("say-input") as HTMLInputElement;
 
@@ -186,6 +187,25 @@ export function setSheet(sheet: CharacterSheet | undefined): void {
     const bar = v >= 0 ? "+".repeat(v) || "·" : "-".repeat(-v);
     el.textContent = `${standing.label} ${bar}`;
     sheetEl.appendChild(el);
+  }
+}
+
+/** The quest log: active jobs and what is still outstanding on each. */
+export function setQuests(quests: readonly QuestEntry[] | undefined): void {
+  const active = (quests ?? []).filter((q) => q.status === "active");
+  questsEl.innerHTML = "";
+  for (const quest of active) {
+    const title = document.createElement("div");
+    title.className = "qt";
+    title.textContent = quest.def.title;
+    questsEl.appendChild(title);
+    for (const objective of quest.def.objectives) {
+      const done = quest.completedObjectiveIds.includes(objective.id);
+      const el = document.createElement("div");
+      el.className = done ? "qo done" : "qo";
+      el.textContent = objective.text;
+      questsEl.appendChild(el);
+    }
   }
 }
 

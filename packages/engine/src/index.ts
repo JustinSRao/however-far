@@ -14,6 +14,7 @@ import type {
 
 export * from "./area.js";
 export * from "./mechanics.js";
+export * from "./quests.js";
 
 export class EngineError extends Error {
   constructor(message: string) {

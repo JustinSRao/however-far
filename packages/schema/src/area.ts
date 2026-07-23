@@ -4,6 +4,8 @@ import {
   AreaEffect,
   Check,
   CharacterSheet,
+  QuestDef,
+  QuestEntry,
   RngState,
   STARTING_SHEET,
 } from "./mechanics.js";
@@ -135,6 +137,12 @@ export const AreaSpec = z.object({
   entities: z.array(PlacedEntity).max(24).default([]),
   portals: z.array(Portal).min(1).max(8),
   onEnterEffects: z.array(AreaEffect).max(10).default([]),
+  /**
+   * Quests this area introduces. Declaring one does not start it — a
+   * `questStart` effect does, which is what lets an area offer a job the
+   * player can decline.
+   */
+  quests: z.array(QuestDef).max(4).default([]),
 });
 export type AreaSpec = z.infer<typeof AreaSpec>;
 
@@ -154,6 +162,7 @@ export const AreaGameState = z.object({
    */
   sheet: CharacterSheet.default(STARTING_SHEET),
   rng: RngState.default({ seed: 1, counter: 0 }),
+  quests: z.array(QuestEntry).max(32).default([]),
 });
 export type AreaGameState = z.infer<typeof AreaGameState>;
 

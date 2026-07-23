@@ -104,8 +104,51 @@ export const AreaEffect = z.discriminatedUnion("op", [
     resource: ResourceId,
     delta: z.number().int().min(-99).max(99),
   }),
+  /** Adds the quest to the log. Its definition must be declared by some area. */
+  z.object({ op: z.literal("questStart"), questId: Slug }),
+  /** Ticks one objective. The engine completes the quest when the last one lands. */
+  z.object({ op: z.literal("questObjective"), questId: Slug, objectiveId: Slug }),
+  /** Ends a quest early — succeeded another way, or lost for good. */
+  z.object({
+    op: z.literal("questResolve"),
+    questId: Slug,
+    status: z.enum(["complete", "failed"]),
+  }),
 ]);
 export type AreaEffect = z.infer<typeof AreaEffect>;
+
+/**
+ * Quests (Phase 6). The Architect plants them as arc payoffs; the World Writer
+ * declares one on the area that introduces it, and any later area can advance
+ * it — the definition is copied into the log at `questStart`, so it survives
+ * leaving the area that offered it.
+ */
+export const QuestObjective = z.object({
+  id: Slug,
+  /** Imperative and concrete: "Find out who signed the transfer form". */
+  text: z.string().min(1).max(200),
+});
+export type QuestObjective = z.infer<typeof QuestObjective>;
+
+export const QuestDef = z.object({
+  id: Slug,
+  title: z.string().min(1).max(120),
+  summary: z.string().min(1).max(500),
+  objectives: z.array(QuestObjective).min(1).max(8),
+  /** Applied once, when the quest completes. */
+  reward: z.array(AreaEffect).max(10).default([]),
+});
+export type QuestDef = z.infer<typeof QuestDef>;
+
+export const QuestStatus = z.enum(["active", "complete", "failed"]);
+export type QuestStatus = z.infer<typeof QuestStatus>;
+
+export const QuestEntry = z.object({
+  def: QuestDef,
+  status: QuestStatus,
+  completedObjectiveIds: z.array(Slug).max(8),
+});
+export type QuestEntry = z.infer<typeof QuestEntry>;
 
 /** One side of a check's outcome. */
 export const CheckOutcome = z.object({
