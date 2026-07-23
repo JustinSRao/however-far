@@ -58,6 +58,7 @@ function makeCtx(overrides: Partial<WorldWriterContext> = {}): WorldWriterContex
     sheet: STARTING_SHEET,
     rng: { seed: 1, counter: 0 },
     quests: [],
+    metaFx: [],
     usedInteractions: [],
   };
   return {

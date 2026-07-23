@@ -74,6 +74,31 @@ export const STARTING_SHEET: CharacterSheet = {
 };
 
 /**
+ * Diegetic interface corruption for Path B (ADR-0015) — the game itself
+ * participating in the world's forgetting of Suzune.
+ *
+ * A CLOSED vocabulary on purpose. These are the only distortions that exist,
+ * they are emitted as validated DSL like every other effect, and the client
+ * renders them: never improvisation at the UI layer, never anything that
+ * touches a real file. A "corrupted" save is presentation over intact data —
+ * the player can always really quit, really resume, and really finish
+ * (ADR-0015: the always-playable invariant outranks the trick).
+ *
+ * The engine refuses these outside his path. The contrast is the point.
+ */
+export const MetaFx = z.discriminatedUnion("kind", [
+  /** This character's name renders as static wherever it appears. */
+  z.object({ kind: z.literal("forgetName"), entityId: Slug }),
+  /** The HUD calls the current place something else. */
+  z.object({ kind: z.literal("renameArea"), name: z.string().min(1).max(120) }),
+  /** The save-slot label quietly rewrites itself. */
+  z.object({ kind: z.literal("relabelSave"), label: z.string().min(1).max(80) }),
+  /** A line surfaces in the HUD that nothing in the game should be saying. */
+  z.object({ kind: z.literal("hudWhisper"), text: z.string().min(1).max(120) }),
+]);
+export type MetaFx = z.infer<typeof MetaFx>;
+
+/**
  * Mechanical effect ops, added to the v0 `Effect` set for the Area DSL only.
  * The legacy text-era engine keeps the smaller union it already exhaustively
  * handles; `AreaEffect` is a superset, so every existing AreaSpec still parses.
@@ -114,6 +139,8 @@ export const AreaEffect = z.discriminatedUnion("op", [
     questId: Slug,
     status: z.enum(["complete", "failed"]),
   }),
+  /** Path B only (ADR-0015); the engine drops these anywhere else. */
+  z.object({ op: z.literal("metaFx"), fx: MetaFx }),
 ]);
 export type AreaEffect = z.infer<typeof AreaEffect>;
 

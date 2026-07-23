@@ -54,6 +54,8 @@ export interface SaveInfo {
   path: "shared" | "her" | "his";
   updatedAt: string;
   areasVisited: number;
+  /** Present when the save has rewritten its own label (ADR-0015). */
+  label?: string;
 }
 
 /** Saved sessions on the server (newest first); empty when unreachable. */

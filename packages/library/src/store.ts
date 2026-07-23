@@ -76,6 +76,12 @@ export interface WorldSessionInfo {
   path: AreaSessionSave["path"];
   updatedAt: string;
   areasVisited: number;
+  /**
+   * What the save calls itself. Normally absent; on his path a `relabelSave`
+   * distortion (ADR-0015) makes the save list itself say something wrong.
+   * Presentation only — the save underneath is intact and loads normally.
+   */
+  label?: string;
 }
 
 export function listWorldSessions(): WorldSessionInfo[] {
@@ -86,12 +92,16 @@ export function listWorldSessions(): WorldSessionInfo[] {
       const s = AreaSessionSave.parse(
         JSON.parse(readFileSync(join(dir("world-sessions"), f), "utf8")),
       );
+      const relabel = [...s.state.metaFx]
+        .reverse()
+        .find((fx) => fx.kind === "relabelSave");
       out.push({
         id: s.id,
         phase: s.phase,
         path: s.path,
         updatedAt: s.updatedAt,
         areasVisited: s.state.visitedAreaIds.length,
+        ...(relabel?.kind === "relabelSave" ? { label: relabel.label } : {}),
       });
     } catch {
       // Unreadable saves are skipped, never fatal.

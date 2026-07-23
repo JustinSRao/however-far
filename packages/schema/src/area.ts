@@ -4,6 +4,7 @@ import {
   AreaEffect,
   Check,
   CharacterSheet,
+  MetaFx,
   QuestDef,
   QuestEntry,
   RngState,
@@ -163,6 +164,8 @@ export const AreaGameState = z.object({
   sheet: CharacterSheet.default(STARTING_SHEET),
   rng: RngState.default({ seed: 1, counter: 0 }),
   quests: z.array(QuestEntry).max(32).default([]),
+  /** Active interface distortions (Path B only, ADR-0015). */
+  metaFx: z.array(MetaFx).max(16).default([]),
 });
 export type AreaGameState = z.infer<typeof AreaGameState>;
 

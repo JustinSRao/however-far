@@ -37,7 +37,9 @@ function describeSave(save: SaveInfo): string {
   const areas = `${save.areasVisited} ${save.areasVisited === 1 ? "area" : "areas"}`;
   const when = new Date(save.updatedAt);
   const date = Number.isNaN(when.getTime()) ? "" : ` · ${when.toLocaleDateString()}`;
-  return `${PATH_LABEL[save.path]}, ${areas}${date}`;
+  // On his path the save may have rewritten its own label (ADR-0015). The
+  // file underneath is intact and loads normally whatever it calls itself.
+  return `${save.label ?? PATH_LABEL[save.path]}, ${areas}${date}`;
 }
 
 /**
@@ -275,7 +277,10 @@ export class PlayScene extends Phaser.Scene {
       picked.choice.id,
     );
     this.world = { ...w, state };
-    const speaker = w.area.entities.find((e) => e.id === picked.entityId)?.name ?? "";
+    const speaker = ui.displayName(
+      picked.entityId,
+      w.area.entities.find((e) => e.id === picked.entityId)?.name ?? "",
+    );
     // A check's own prose is the real outcome, so it wins over the choice's
     // reply when both exist.
     const text = check ? check.text : reply;
@@ -392,7 +397,7 @@ export class PlayScene extends Phaser.Scene {
         )
         .setStrokeStyle(1, 0x000000, 0.5);
       const label = this.add
-        .text(entity.pos.x * TILE + TILE / 2, entity.pos.y * TILE - 4, entity.name, {
+        .text(entity.pos.x * TILE + TILE / 2, entity.pos.y * TILE - 4, ui.displayName(entity.id, entity.name), {
           fontFamily: "ui-monospace, Consolas, monospace",
           fontSize: "10px",
           color: "#e8e6df",
@@ -421,6 +426,7 @@ export class PlayScene extends Phaser.Scene {
     if (!w) return;
     ui.setSheet(w.state.sheet);
     ui.setQuests(w.state.quests);
+    ui.setMetaFx(w.state.metaFx);
     ui.setAffordability((choice) => choiceAffordable(w.state, choice));
     let prompt = "wasd / arrows · move   t · speak";
     if (ui.veilOpen()) prompt = "";

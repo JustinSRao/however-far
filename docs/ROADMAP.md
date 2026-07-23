@@ -152,9 +152,13 @@ Goal: both paths playable start → threshold ending, feeling like a real game.
       session via `HOWEVERFAR_MAX_SPECULATIONS`, asked once per door, never during the
       prologue, and never recorded as a play signal. Failed speculations fall back to
       writing for real. *Remaining: streamed dialogue and in-fiction masking*
-- [ ] **Path B meta-effects (`metaFx`, ADR-0015):** the DSL vocabulary for diegetic
-      interface corruption — missing portraits, rewriting save labels, vanishing
-      dialogue-log entries — sandboxed, non-destructive, engine-mediated
+- [x] **Path B meta-effects (`metaFx`, ADR-0015):** a CLOSED four-effect vocabulary —
+      `forgetName` (a character's name renders as static everywhere), `renameArea`,
+      `relabelSave` (the save list itself lies), `hudWhisper`. **The engine enforces
+      Path B only**, not the prompt and not the client: her path silently drops them
+      and integrity validation rejects them, including inside a check's failure
+      branch. Cosmetic by construction — a test pins that sheet, inventory, quests and
+      position are untouched, so the always-playable invariant holds
 - [ ] Path endings: threshold finales per STORY.md; full playthroughs of both paths
 - [ ] Cost guardrails: per-session token budgets, graceful degradation
 

@@ -100,3 +100,15 @@ export function resolveQuest(
   const resolved = replaceEntry(state, next);
   return status === "complete" ? applyReward(resolved, next) : resolved;
 }
+
+/**
+ * Active interface distortions (ADR-0015). Presentation-only: the client reads
+ * these to decide what to render wrongly. Nothing here touches a real file,
+ * and nothing here can make the game unplayable.
+ */
+export function metaFxOf<K extends string>(
+  state: { metaFx: readonly { kind: string }[] },
+  kind: K,
+): Extract<{ kind: string }, { kind: K }>[] {
+  return state.metaFx.filter((fx) => fx.kind === kind) as never;
+}

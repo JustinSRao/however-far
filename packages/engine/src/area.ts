@@ -62,6 +62,17 @@ function applyOneEffect(
       return completeObjective(state, area, effect.questId, effect.objectiveId, payReward);
     case "questResolve":
       return resolveQuest(state, effect.questId, effect.status, payReward);
+    case "metaFx": {
+      // ADR-0015: Path B only, and the engine is where that is enforced —
+      // not the prompt, which can be wrong, and not the client, which renders
+      // whatever it is handed. Her path silently drops these.
+      if (area?.path !== "his") return state;
+      const already = state.metaFx.some(
+        (fx) => JSON.stringify(fx) === JSON.stringify(effect.fx),
+      );
+      if (already) return state;
+      return { ...state, metaFx: [...state.metaFx, effect.fx] };
+    }
     default:
       // Mechanical ops (Phase 6) live on the character sheet.
       return { ...state, sheet: applySheetEffects(state.sheet, [effect]) };
@@ -140,6 +151,7 @@ export function initialAreaState(firstArea: AreaSpec, seed = 1): AreaGameState {
       sheet: STARTING_SHEET,
       rng: { seed, counter: 0 },
       quests: [],
+      metaFx: [],
     },
     firstArea,
   );
@@ -440,6 +452,14 @@ export function validateAreaIntegrity(area: AreaSpec): string[] {
         problems.push(`entity "${entity.id}" has duplicate choice id "${choice.id}"`);
       }
       choiceIds.add(choice.id);
+    }
+  }
+
+  for (const effect of allEffectsIn(area)) {
+    if (effect.op === "metaFx" && area.path !== "his") {
+      problems.push(
+        `metaFx "${effect.fx.kind}" appears on a "${area.path}" area — interface corruption is Path B only (ADR-0015)`,
+      );
     }
   }
 

@@ -1,4 +1,10 @@
-import type { CharacterSheet, ConvoChoice, DialogueLine, QuestEntry } from "@howeverfar/schema";
+import type {
+  CharacterSheet,
+  ConvoChoice,
+  DialogueLine,
+  MetaFx,
+  QuestEntry,
+} from "@howeverfar/schema";
 import type { CheckResult } from "./deps.js";
 
 /**
@@ -36,9 +42,41 @@ export function panelState(): PanelState {
   return state;
 }
 
+/**
+ * Active Path B distortions (ADR-0015). Held here so every render path can ask
+ * "is this name still allowed to exist" without threading state everywhere.
+ * Purely cosmetic: nothing below can make the game unplayable.
+ */
+let distortions: readonly MetaFx[] = [];
+
+export function setMetaFx(fx: readonly MetaFx[] | undefined): void {
+  distortions = fx ?? [];
+}
+
+/** Static where a forgotten name used to be. */
+const REDACTED = "▓▓▓▓";
+
+export function displayName(entityId: string, name: string): string {
+  return distortions.some((fx) => fx.kind === "forgetName" && fx.entityId === entityId)
+    ? REDACTED
+    : name;
+}
+
+function whisper(): string | undefined {
+  const found = [...distortions].reverse().find((fx) => fx.kind === "hudWhisper");
+  return found?.kind === "hudWhisper" ? found.text : undefined;
+}
+
+function areaAlias(): string | undefined {
+  const found = [...distortions].reverse().find((fx) => fx.kind === "renameArea");
+  return found?.kind === "renameArea" ? found.name : undefined;
+}
+
 export function setHud(areaName: string, prompt: string): void {
-  hudArea.textContent = areaName;
-  hudPrompt.textContent = prompt;
+  hudArea.textContent = areaAlias() ?? areaName;
+  // A whisper displaces the control prompt: the interface has something else
+  // it would rather say.
+  hudPrompt.textContent = whisper() ?? prompt;
 }
 
 function render(): void {
@@ -80,7 +118,7 @@ function render(): void {
       "speaker",
       line.speakerId === "narrator"
         ? ""
-        : (state.speakerNames.get(line.speakerId) ?? line.speakerId),
+        : displayName(line.speakerId, state.speakerNames.get(line.speakerId) ?? line.speakerId),
     );
     add("line", line.text);
     add(
